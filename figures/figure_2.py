@@ -1,261 +1,539 @@
-import matplotlib
-# matplotlib.use("macosx")
-import matplotlib.colors as colors
-import pandas as pd
-import numpy as np
-import scipy
 import pathlib
 
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
 from dotenv import dotenv_values
-from scipy.optimize import curve_fit
-from scipy.stats import norm, laplace
 
+from analysis.personal_dirs.Roberto.model.drift_diffusion.core.ddm_stable import DDMstable
+from analysis.personal_dirs.Roberto.model.utils.params import ParameterList, Parameter
 from analysis.personal_dirs.Roberto.plot.paper_behavior_model.behavioral_model_style import BehavioralModelStyle
-from analysis.personal_dirs.Roberto.utils.fast_functions import normpdf
+from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
+from analysis.personal_dirs.Roberto.utils.constants import StimulusParameterLabel, CorrectBoutColumn, \
+    ResponseTimeColumn, alphabet, Keyword
+from analysis.personal_dirs.Roberto.utils.palette import Palette
 from analysis.personal_dirs.Roberto.utils.service.statistics_service import StatisticsService
-from analysis_helpers.analysis.personal_dirs.Roberto.utils.constants import palette_0, alphabet
-from analysis_helpers.analysis.personal_dirs.Roberto.utils.palette import Palette
-from analysis_helpers.analysis.utils.figure_helper import Figure
-
-# parameters
-show_objective_function_vs_iterations = True
-show_repeatability = True
+from analysis.utils.figure_helper import Figure
 
 # env
 env = dotenv_values()
-path_dir = pathlib.Path(env['PATH_DIR'])
+path_dir = Path(env['PATH_DIR'])
+path_save = Path(env['PATH_SAVE'])
 
-# Make a standard figure
-fig = Figure()
+# parameters plot
+plot_height = 1
+plot_height_small = plot_height / 2.5
+padding_plot = 0.5
+padding_vertical = plot_height_small
+i_plot_label = 1  # 6  # 0  #
+plot_label_list = alphabet
+color_neutral = "#bfbfbfff"
 
-style = BehavioralModelStyle
+style = BehavioralModelStyle()
 xpos_start = style.xpos_start
 ypos_start =style.ypos_start
 xpos = xpos_start
 ypos = ypos_start
 padding = 1.5  # style.padding
+padding_short = 0.75  # style.padding
 plot_height = style.plot_height
-plot_width = style.plot_width * 3/2
-i_plot_label = 3
-show_best_model = True
+plot_width = style.plot_width
+plot_width_short = style.plot_width * 0.9
+letter_counter = 1
+style.add_palette("neutral", [Palette.color_neutral])
 palette = style.palette["default"]
+style.add_palette("fish_code", ["#73489C", "#753B51", "#103882", "#7F0C0C"])
 
-# parameters
+# single-fish analysis is necessary
+show_trajectory_decision_variable = False
+show_loss_reduction = False
+show_psychometric_curve = False
+show_coherence_vs_interbout_interval = False
+show_rt_distributions = False
+show_individual_estimations = True
+show_distribution_parameters = True
+
+# configurations experiment
+analysed_parameter_list = [0, 25, 50, 100]
+time_start_stimulus = 0  # 10  # seconds
+time_end_stimulus = 30  # seconds
+time_experimental_trial = 30  # seconds
+analysed_parameter = StimulusParameterLabel.COHERENCE.value  # StimulusParameterLabel.PERIOD.value  #
+analysed_parameter_label = "Coh (%)"  # "period [s]"  #
+query_time = f'start_time > {time_start_stimulus} and end_time < {time_end_stimulus}'
+
+# configuraitons structure
+score_config = {
+    "label": "loss",
+    "min": 0,
+    "max": 10
+}
 parameter_list = [
-    {"param": "noise_sigma",
-     "label": "diffusion",
+    {"label": "noise_sigma",
+     "label_show": "diffusion",
      "min": 0.0,
      "mean": 1.5,
-     "max": 3.0},
-    {"param": "scaling_factor",
-     "label": "drift",
+     "max": 3.0,
+     "relevant_values": None},
+    {"label": 'scaling_factor',
+     "label_show": "drift",
      "min": -3,
      "mean": 0,
-     "max": 3},
-    {"param": "leak",
-     "label": "leak",
+     "max": 3,
+     "relevant_values": None},
+    {"label": 'leak',
+     "label_show": "leak",
      "min": -3,
      "mean": 0,
-     "max": 3},
-    {"param": 'residual_after_bout',
-     "label": "reset",
+     "max": 3,
+     "relevant_values": [-1, 1]},
+    {"label": 'residual_after_bout',
+     "label_show": "reset",
      "min": 0.0,
      "mean": 0.5,
-     "max": 1.0},
-    {"param": 'inactive_time',
-     "label": "delay",
+     "max": 1.0,
+     "relevant_values": None},
+    {"label": 'inactive_time',
+     "label_show": "delay",
      "min": 0.0,
      "mean": 0.5,
-     "max": 1.0},
+     "max": 1.0,
+     "relevant_values": None},
 ]
 
-if show_objective_function_vs_iterations:
-    plot_width_a = 1
-    plot_width_bc = 1
-    df = pd.DataFrame()
-    model_list = []
-    loss = []
-    parameter_error = {p["param"]: {} for p in parameter_list}
-    parameter_error_trajectory_list_dict = {p["param"]: [] for p in parameter_list}
+# configurations plots
+number_bins_hist = 15
 
-    present_fitting_run = 0
-    for i_error, error_path in enumerate(path_dir.glob("error_test_*_fit.hdf5")):
-        if error_path.is_dir():
-            continue
+df_dict = {}
+all_label = "all"
+fish_0_label = "205"
+fish_1_label = "506"
+fish_2_label = "201"
+# fish_3_label = "504"
+fish_to_include_list = [fish_0_label, fish_1_label, fish_2_label]
+config_list = [{"label": "data", "line_dashes": None, "alpha": 0.5, "color": None},
+               {"label": "fit", "line_dashes": (2, 4), "alpha": 1, "color": "k"}]
+for i_fish, fish in enumerate(fish_to_include_list):
+    df_data = pd.read_hdf(path_dir / f"data_fish_{fish}.hdf5")
+    for path_fit in path_dir.glob(f"data_synthetic_fish_{fish}_*.hdf5"):
+        df_fit = pd.read_hdf(path_fit)
+        break
+    df_dict[fish] = {"fit": df_fit, "data": df_data, "color": style.palette["fish_code"][i_fish]}  # BehavioralProcessing.remove_fast_straight_bout(df, threshold_response_time=100)
 
-        df_error = pd.read_hdf(str(error_path))
-        if len(df_error) < 3:
-            continue
+# Make a standard figure
+fig = Figure()
 
-        for index_parameter, parameter in enumerate(parameter_list):
-            parameter_error_trajectory_list_dict[parameter['param']].append(np.array(df_error[f"{parameter['param']}_error"]))
+plot_height_row = plot_height_small * 2 + padding_vertical
 
-        loss.append(np.array(df_error["score"]))
+if show_trajectory_decision_variable:
+    x_show_start = 0
+    x_show_end = 100
+    plot_width_here = 8
+    plot_height_here = 0.7
+    index_parameter_to_simulate = [1]
+    simulated_parameters = [analysed_parameter_list[i] for i in index_parameter_to_simulate]
+    # model parameters
+    dt = 0.01
+    threshold = 1
+    parameters = ParameterList()
+    parameters.add_parameter("dt", Parameter(value=dt))
+    parameters.add_parameter("noise_sigma", Parameter(value=1))
+    parameters.add_parameter("scaling_factor", Parameter(value=0.6))
+    parameters.add_parameter("leak", Parameter(value=-1))
+    parameters.add_parameter("residual_after_bout", Parameter(value=0.03))
+    parameters.add_parameter("inactive_time", Parameter(value=0.1))
+    parameters.add_parameter("threshold", Parameter(value=threshold))
 
-    parameter_error_trajectory_list_dict["score"] = np.array(loss)
-    for p in parameter_list:
-        parameter_error_trajectory_list_dict[p['param']] = np.array(parameter_error_trajectory_list_dict[p['param']])
+    ddm_model = DDMstable(parameters, trials_per_simulation=200, time_experimental_trial=30, scaling_factor_input=1)
+    ddm_model.define_stimulus(time_start_stimulus=time_start_stimulus, time_end_stimulus=time_end_stimulus)
 
-    loss_trajectory_list = parameter_error_trajectory_list_dict["score"]
-    loss_mean = np.array([np.mean(parameter_error_trajectory_list_dict["score"][:, i]) for i in range(parameter_error_trajectory_list_dict["score"].shape[1])])
-    loss_std = np.array([np.std(parameter_error_trajectory_list_dict["score"][:, i]) for i in range(parameter_error_trajectory_list_dict["score"].shape[1])])
-    iteration_list = np.arange(len(loss_mean))
+    time_trial_list = np.arange(x_show_start, x_show_end + dt, dt)
+    for index_parameter, parameter in enumerate(simulated_parameters):
+        plot_n = fig.create_plot(plot_label=alphabet[len(simulated_parameters) - index_parameter], xpos=xpos,
+                                 ypos=ypos,
+                                 plot_height=plot_height_here, plot_width=plot_width_here,
+                                 xl="Simulation time (s)",
+                                 xmin=x_show_start, xmax=x_show_end, xticks=None,
+                                 ymin=-1 * threshold - 0.5, ymax=threshold + 0.5,
+                                 yticks=[-threshold, threshold], yticklabels=["-T", "T"], hlines=[0])
+        plot_n.draw_line(time_trial_list, np.zeros_like(time_trial_list)-threshold, lc="k")
+        plot_n.draw_line(time_trial_list, np.zeros_like(time_trial_list)+threshold, lc="k")
 
-    parameter_error_mean = {}
-    parameter_error_std = {}
+        scalebar_time = 5
+        scalebar = time_trial_list[-int(scalebar_time/dt):]
+        plot_n.draw_line(scalebar, np.zeros_like(scalebar) - threshold - 0.3, lc="k")
+        plot_n.draw_text(x_show_end - scalebar_time, -threshold - 0.4, f"{scalebar_time}s", textlabel_ha="left", textlabel_va="top")
 
-    parameter_error_mean["score"] = loss
-    for index_parameter, parameter in enumerate(parameter_list):
-        parameter_error_mean[parameter["param"]] = np.array([np.mean(parameter_error_trajectory_list_dict[parameter["param"]][:, i]) for i in range(parameter_error_trajectory_list_dict[parameter["param"]].shape[1])])
-        parameter_error_std[parameter["param"]] = np.array([np.std(parameter_error_trajectory_list_dict[parameter["param"]][:, i]) for i in range(parameter_error_trajectory_list_dict[parameter["param"]].shape[1])])
 
-    xpos = xpos_start
+        plot_n.draw_line(np.linspace(x_show_start, x_show_end, len(time_trial_list)), np.zeros_like(time_trial_list) + threshold + 0.3, lc=style.palette["stimulus"][-1-index_parameter_to_simulate[index_parameter]])
+        plot_n.draw_text(x_show_end + 1, threshold + 0.2, f"Coh={parameter}%", textlabel_ha="left")
 
-    plot_0a = fig.create_plot(plot_label=alphabet[i_plot_label], xpos=xpos, ypos=ypos, plot_height=plot_height,
-                             plot_width=plot_width_a, errorbar_area=True,
-                             xl=None, xmin=-0.5, xmax=1500.5, xticks=[0, 1500],  # xticks=[0, 500, 1000, 1500],
-                             yl="loss", ymin=0, ymax=3, yticks=[0, 1.5, 3])
+        # constant input
+        input_signal = np.zeros(len(time_trial_list)) + parameter / 100
 
-    for loss_trajectory in loss_trajectory_list:
-        plot_0a.draw_line(x=iteration_list[:len(loss_trajectory)], y=loss_trajectory, lc=Palette.color_neutral, lw=0.05,
-                         alpha=0.5)
+        # simulate
+        response_time_list, bout_decision_list, decision_time_list, internal_state_trajectory = ddm_model.simulate_trial(
+            input_signal=input_signal)
 
-    plot_0a.draw_line(x=iteration_list, y=loss_mean, lc=palette_0[-1], lw=0.75)
+        start_time_decision = 0
+        for i_d, decision_time in enumerate(decision_time_list):
+            if decision_time > x_show_end:
+                break
+            # index_time_decision = np.argwhere(
+            #     np.logical_and(start_time_decision <= time_trial_list, time_trial_list < decision_time - dt))
+            index_time_decision = np.argwhere(time_trial_list <= x_show_end).flatten()
+            plot_n.draw_line(time_trial_list[index_time_decision],
+                             internal_state_trajectory[index_time_decision],
+                             lc=style.palette["neutral"][0], lw=0.1)
+            if bout_decision_list[i_d] > 0:
+                y = threshold
+                color_dot = style.palette["correct_incorrect"][0]
+            else:
+                y = -threshold
+                color_dot = style.palette["correct_incorrect"][1]
+            plot_n.draw_scatter(decision_time, y, pc=color_dot, elw=0)
+            # plot_n.draw_scatter(time_trial_list[index_time_decision[-1]] - start_time_decision, y, pc=color_dot)
+            # start_time_decision = decision_time - dt
 
-    xpos = xpos + plot_width_a + padding
-    ypos = ypos
-
-    error_array_start = parameter_error_trajectory_list_dict["score"][:, 0]
-    error_array_end = parameter_error_trajectory_list_dict["score"][:, -1]
-    data_hist_value_start, data_hist_time_start = StatisticsService.get_hist(error_array_start, bins=np.arange(0, 3, 0.1), density=True, center_bin=True)
-    data_hist_value_end, data_hist_time_end = StatisticsService.get_hist(error_array_end, bins=np.arange(0, 3, 0.1), density=True, center_bin=True)
-
-    plot_0b = fig.create_plot(xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_bc,
-                              errorbar_area=False, ymin=0, ymax=3,
-                              yticks=[0, 1.5, 3],
-                              yl=f"loss\nat iteration 0",
-                              xl=None, xmin=0, xmax=50, xticks=[0, 25, 50], hlines=[0])
-    plot_0b.draw_line(data_hist_value_start * 100, data_hist_time_start, lc=Palette.color_neutral, elw=1)
-
-    xpos = xpos + plot_width_bc + padding
-    ypos = ypos
-
-    plot_0c = fig.create_plot(xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_bc,
-                              errorbar_area=False, ymin=0, ymax=3,
-                              yticks=[0, 1.5, 3],
-                              yl=f"loss\nat iteration 1500",
-                              xl=None, xmin=0, xmax=50, xticks=[0, 25, 50], hlines=[0])
-    plot_0c.draw_line(data_hist_value_end * 100, data_hist_time_end, lc=Palette.color_neutral, elw=1)
-
-    # xpos += padding + plot_width
-    # ypos += padding + plot_height
+        ypos -= padding + plot_height_here
     i_plot_label += 1
-    xpos = xpos_start
+
+if show_loss_reduction:
+    ypos = ypos - padding_short
+
+    plot_loss = fig.create_plot(plot_label=alphabet[i_plot_label],
+                                xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width,
+                                ymin=0, ymax=20, yticks=[0, 10, 20],
+                                yl="Loss",
+                                xl="Iteration", xmin=0.5, xmax=2.5, xticks=[1, 2],
+                                xticklabels=["0", "1500"])
+    for i_fish_id, fish_id in enumerate(fish_to_include_list):
+        loss_array = np.zeros(2)
+        for path_error in path_dir.glob(f"error_fish_{fish_id}_*.hdf5"):
+            df_error = pd.read_hdf(path_error)
+            loss_array[0] = df_error["score"][0]
+
+            loss_array[1] = df_error["score"][len(df_error)-1]
+
+            plot_loss.draw_line((1, 2), loss_array, lc=df_dict[fish_id]["color"])
+            plot_loss.draw_scatter((1, 2), loss_array, ec=df_dict[fish_id]["color"], pc=df_dict[fish_id]["color"], label=f"fish {i_fish_id}")
     ypos = ypos - padding - plot_height
+    xpos = xpos_start
+    i_plot_label += 1
 
-    df_noise_dict = {p["param"]: {} for p in parameter_list}
-    p_final_pdf = {p["param"]: None for p in parameter_list}
+if show_psychometric_curve:
+    plot_height = plot_height_row
+    plot_width = 1
+    color_line = "gray"
+    lw = 1
+    show_label = True
 
-    # plotting
-    for index_parameter, parameter in enumerate(parameter_list):
-        plot_na = fig.create_plot(plot_label=alphabet[i_plot_label], xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_a, errorbar_area=True,
-                                xl="iteration" if index_parameter==len(parameter_list)-1 else None, xmin=-0.5, xmax=1500.5, xticks=[0, 1500],  # xticks=[0, 500, 1000, 1500],
-                                yl=f"error {parameter['label']}", ymin=-1, ymax=1, yticks=[-1, 0, 1])
+    plot_0 = fig.create_plot(plot_label=plot_label_list[i_plot_label], xpos=xpos, ypos=ypos, plot_height=plot_height,
+                             plot_width=plot_width,
+                             xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list),
+                             # xl=analysed_parameter_label,
+                             xticks=None,  # xticks=[int(p) for p in parameter_list_all],
+                             yl="Percentage\ncorrect swims (%)",
+                             ymin=0, ymax=100,
+                             yticks=[0, 50, 100], hlines=[0.5])
+    i_plot_label += 1
 
-        for parameter_error_trajectory in parameter_error_trajectory_list_dict[parameter['param']]:
-            plot_na.draw_line(x=iteration_list[:len(parameter_error_trajectory)], y=parameter_error_trajectory, lc=palette[index_parameter], lw=0.05, alpha=0.5)
+    i_fish = 1
+    for k_fish, df_fish_dict in df_dict.items():
+        for config in config_list:
+            # filter
+            df = df_fish_dict[config["label"]]
+            df_filtered = df.query(query_time)
+            df_filtered = df_filtered[df_filtered[analysed_parameter].isin(analysed_parameter_list)]
 
-        plot_na.draw_line(x=iteration_list, y=parameter_error_mean[parameter["param"]], lc="k", lw=0.75)
+            # computation
+            p_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters(df_filtered, analysed_parameter=analysed_parameter)
+            correct_bout_list *= 100
+            p_list = np.array([int(p) for p in p_list])
 
-        xpos = xpos + plot_width_a + padding
-        ypos = ypos
+            # plot
+            plot_0.draw_line(x=p_list, y=correct_bout_list, lc=df_fish_dict["color"], lw=lw, alpha=config["alpha"], line_dashes=config["line_dashes"])
+            if show_label and config["label"] == "data":
+                plot_0.draw_text(max(p_list) + 0.1, correct_bout_list[-1], f"fish {i_fish}",
+                                 textlabel_rotation='horizontal', textlabel_ha='left', textcolor=df_fish_dict["color"])
+                i_fish += 1
 
-        error_array_start = parameter_error_trajectory_list_dict[parameter["param"]][:, 0]
-        error_array_end = parameter_error_trajectory_list_dict[parameter["param"]][:, -1]
-        data_hist_value_start, data_hist_time_start = StatisticsService.get_hist(error_array_start, bins=np.arange(-1, 1, 0.05), density=True, center_bin=True)
-        data_hist_value_end, data_hist_time_end = StatisticsService.get_hist(error_array_end, bins=np.arange(-1, 1, 0.05), density=True, center_bin=True)
+    # ypos = ypos - padding - plot_height
+    # xpos = xpos_start
+    ypos = ypos
+    xpos = xpos + padding + plot_width
 
-        plot_nb = fig.create_plot(xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_bc,
-                                  errorbar_area=False, ymin=-1, ymax=1,
-                                  yticks=[-1, 0, 1],
-                                  yl=f"error {parameter['label']}\nat iteration 0",
-                                  xl="percentage models" if index_parameter==len(parameter_list)-1 else None, xmin=0, xmax=50, xticks=[0, 25, 50], hlines=[0])
-        plot_nb.draw_line(data_hist_value_start * 100, data_hist_time_start, lc=palette[index_parameter], elw=1)
+xpos = xpos_start
+ypos = ypos - padding - plot_height
+if show_coherence_vs_interbout_interval:
+    plot_height = plot_height_row
+    plot_width = 1
+    color_line = "gray"
+    lw = 1
+    show_label = True
 
-        xpos = xpos + plot_width_bc + padding
-        ypos = ypos
+    plot_0 = fig.create_plot(xpos=xpos, ypos=ypos,
+                             plot_height=plot_height,
+                             plot_width=plot_width,
+                             errorbar_area=True,
+                             xl=analysed_parameter_label, xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list),
+                             xticks=[int(p) for p in analysed_parameter_list], yl="Interbout interval (s)",
+                             ymin=0, ymax=2,
+                             yticks=[0, 1, 2])
 
-        plot_nc = fig.create_plot(xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_bc,
-                                  errorbar_area=False, ymin=-1, ymax=1,
-                                  yticks=[-1, 0, 1],
-                                  yl=f"error {parameter['label']}\nat iteration 1500",
-                                  xl="percentage models" if index_parameter==len(parameter_list)-1 else None, xmin=0, xmax=50, xticks=[0, 25, 50], hlines=[0])
-        plot_nc.draw_line(data_hist_value_end * 100, data_hist_time_end, lc=palette[index_parameter], elw=1)
+    i_fish = 1
+    for k_fish, df_fish_dict in df_dict.items():
+        for config in config_list:
+            # filter
+            df = df_fish_dict[config["label"]]
+            df_filtered = df.query(query_time)
+            df_filtered = df_filtered[df_filtered[analysed_parameter].isin(analysed_parameter_list)]
 
-        # res = curve_fit(normpdf, data_hist_time_end[int(len(data_hist_time_end) / 2 - 5):int(len(data_hist_time_end) / 2 + 5)], data_hist_value_end[int(len(data_hist_time_end) / 2 - 5):int(len(data_hist_time_end) / 2 + 5)], p0=[0, 0.01])
-        # mu, std = res[0]
-        # mu, std = norm.fit(error_array_end)
-        mu, b = laplace.fit(error_array_end)
-        df_noise_dict[parameter['param']]["label"] = "laplace"
-        df_noise_dict[parameter['param']]["mu"] = mu
-        df_noise_dict[parameter['param']]["b"] = b
-        y_dist = laplace.pdf(data_hist_time_end, mu, b)
-        # y_dist = normpdf(data_hist_time_end, mu, std)
-        y_dist /= np.sum(y_dist)
-        p_final_pdf[parameter["param"]] = y_dist
+            # computation
+            p_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters(df_filtered,
+                                                                                                                      analysed_parameter=analysed_parameter,
+                                                                                                                      column_name=ResponseTimeColumn)
+            p_list = np.array([int(p) for p in p_list])
 
-        plot_nc.draw_line(y_dist * 100, data_hist_time_end, lc="k", elw=0.3, line_dashes=(2, 4), alpha=1)
+            # plot
+            plot_0.draw_line(x=p_list, y=correct_bout_list, lc=df_fish_dict["color"], lw=lw, alpha=config["alpha"], line_dashes=config["line_dashes"])
+            if show_label and config["label"] == "data":
+                plot_0.draw_text(max(p_list) + 0.1, correct_bout_list[-1], f"fish {i_fish}",
+                                 textlabel_rotation='horizontal', textlabel_ha='left', textcolor=df_fish_dict["color"])
+                i_fish += 1
 
-        # xpos += padding + plot_width
-        # ypos += padding + plot_height
-        i_plot_label += 1
-        xpos = xpos_start
-        ypos = ypos - padding - plot_height
+    # ypos = ypos - padding - plot_height
+    # xpos = xpos_start
+    ypos = ypos
+    xpos = xpos + padding + plot_width
 
-    df_noise = pd.DataFrame(df_noise_dict)
-    df_noise.to_hdf(str(pathlib.Path.home() / 'Desktop' / "df_noise"), key="estimation_error")
+xpos = xpos_start
+ypos = ypos - padding - plot_height * 2
+if show_rt_distributions:
+    # parameters
+    padding_here = plot_height_small * 2
+    palette = style.palette["stimulus"]
+    x_limits = [0, 2]  # None  #
+    y_limits = [0, 0.2]
 
-if show_repeatability:
-    path_dir_repeat = pathlib.Path(r"C:\Users\Roberto\Academics\data\benchmarking\test_repeatability")
-    test_id = "006"
-    plot_width_here = 1.5
-    for path in path_dir_repeat.glob(f"model_test_{test_id}_*.hdf5"):
-        if "_fit." in path.name:
-            continue
+    plot_height_here = plot_height_small * 3
+    plot_width_here = 0.7
 
-        # test_id = path.name.split("_")[2].replace(".hdf5", "")
-        df_target = pd.read_hdf(path)
+    plot_section = {"corr": {}, "err": {}}
+
+    df_dict.pop(all_label, None)  # get rid of the df with all data merged
+
+    for i_k, k in enumerate(df_dict.keys()):
+        for i_param, parameter in enumerate(analysed_parameter_list):
+            # plot
+            line_dashes = None
+            plot_title = None
+            if i_k == 0:
+                if i_param == 0:
+                    plot_title = f"Coh={parameter}%"
+                else:
+                    plot_title = f"{parameter}%"
+            plot_section["corr"][i_param] = fig.create_plot(plot_label=plot_label_list[i_plot_label] if i_k == 0 and i_param == 0 else None,
+                                                            plot_title=plot_title,
+                                                            xpos=xpos + i_param * (plot_width_here + padding_plot),
+                                                            ypos=ypos + plot_height_small + padding_vertical,
+                                                            plot_height=plot_height_here,
+                                                            plot_width=plot_width_here,
+                                                            xmin=x_limits[0], xmax=x_limits[-1],
+                                                            xticks=None, yticks=None,
+                                                            ymin=-y_limits[-1], ymax=y_limits[-1],
+                                                            hlines=[0])
+            plot_section["err"][i_param] = plot_section["corr"][i_param]
+
+            if i_param == len(analysed_parameter_list) - 1 and i_k == len(df_dict)-1:
+                y_location_scalebar = y_limits[-1] / 6
+                x_location_scalebar = x_limits[-1] / 6
+                plot_section["corr"][i_param].draw_line((1.7, 1.7), (y_location_scalebar, y_location_scalebar + 0.1), lc="k")
+                plot_section["corr"][i_param].draw_text(2, y_location_scalebar, "0.1 events/s",
+                                                        textlabel_rotation='vertical', textlabel_ha='left', textlabel_va="bottom")
+
+                plot_section["corr"][i_param].draw_line((x_location_scalebar, x_location_scalebar + 0.5), (-y_location_scalebar, -y_location_scalebar), lc="k")
+                plot_section["corr"][i_param].draw_text(x_location_scalebar, -4 * y_location_scalebar, "0.5 s",
+                                                        textlabel_rotation='horizontal', textlabel_ha='left', textlabel_va="bottom")
+
+            for config in config_list:
+                df = df_dict[k][config["label"]]
+                plot_section_corr = plot_section["corr"][i_param]
+                plot_section_err = plot_section["err"][i_param]
+
+                df_filtered = df[df[analysed_parameter] == parameter]
+                df_filtered = df_filtered.query(query_time)
+
+                duration = np.sum(
+                    BehavioralProcessing.get_duration_trials_in_df(df_filtered, fixed_time_trial=time_end_stimulus-time_start_stimulus)
+                )
+
+                # plot distribution of data over coherence levels
+                data_corr = df_filtered[df_filtered[CorrectBoutColumn] == 1][ResponseTimeColumn]
+                data_err = df_filtered[df_filtered[CorrectBoutColumn] == 0][ResponseTimeColumn]
+
+                data_hist_value_corr, data_hist_time_corr = StatisticsService.get_hist(data_corr,
+                                                                                       # bins=100,
+                                                                                       bins=np.arange(x_limits[0], x_limits[-1], (x_limits[-1]-x_limits[0])/50),
+                                                                                       duration=duration,
+                                                                                       center_bin=True)
+                index_in_limits = np.argwhere(np.logical_and(data_hist_time_corr > x_limits[0], data_hist_time_corr < x_limits[1]))
+                data_hist_time_corr = data_hist_time_corr[index_in_limits].flatten()
+                data_hist_value_corr = data_hist_value_corr[index_in_limits].flatten()
+
+                data_hist_value_err, data_hist_time_err = StatisticsService.get_hist(data_err,
+                                                                                     # bins=100,
+                                                                                     bins=np.arange(x_limits[0], x_limits[-1], (x_limits[-1]-x_limits[0])/50),
+                                                                                     duration=duration,
+                                                                                     center_bin=True)
+                index_in_limits = np.argwhere(
+                        np.logical_and(data_hist_time_err > x_limits[0], data_hist_time_err < x_limits[1]))
+                data_hist_time_err = data_hist_time_err[index_in_limits].flatten()
+                data_hist_value_err = data_hist_value_err[index_in_limits].flatten()
+
+                if config["color"] is None:
+                    lc_correct = style.palette["correct_incorrect"][0]
+                    lc_incorrect = style.palette["correct_incorrect"][1]
+                    alpha_correct = 1
+                    alpha_incorrect = 1
+                else:
+                    lc_correct = config["color"]
+                    lc_incorrect = config["color"]
+                    alpha_correct = 0.7
+                    alpha_incorrect = 0.3
+
+                plot_section_corr.draw_line(data_hist_time_corr, data_hist_value_corr, lc=lc_correct,  # lc=style.palette["fish_code"][i_k], # palette[-1-i_param],
+                                            lw=0.75, line_dashes=config["line_dashes"], alpha=alpha_correct)
+                plot_section_err.draw_line(data_hist_time_err, -1 * data_hist_value_err, lc=lc_incorrect,  # lc=style.palette["fish_code"][i_k], # palette[-1-i_param],
+                                            lw=0.75, line_dashes=config["line_dashes"], alpha=alpha_incorrect)
+
+        ypos = ypos - (padding_here + plot_height_small)
+    i_plot_label += 1
+    plot_height = 1
+    ypos = ypos
+    xpos = xpos + i_param * (plot_width_here + padding_plot) + plot_width_here + padding
+xpos = xpos_start
+
+if show_distribution_parameters:
+    from_best_model = True
+    plot_height_here = style.plot_height
+    plot_width_here = plot_width_short
+    padding_here = style.padding
+    palette = style.palette["default"]
+
+    # path_noise_statistics = r"C:\Users\Roberto\Academics\data\benchmarking\weight_nosmooth_2coh\results\df_noise"
+    # noise_statistics = pd.read_hdf(path_noise_statistics)
+    number_resampling = 10000
+
+    distribution_trajectory_dict = {p["label"]: np.zeros(number_bins_hist) for p in parameter_list}
+    raw_data_dict_per_fish = {p["label"]: {} for p in parameter_list}
+    raw_data_dict = {p["label"]: [] for p in parameter_list}
+    model_dict = {}
+    n_models = 0
+    for model_filepath in path_dir.glob('model_*_fit.hdf5'):
+        model_filename = str(model_filepath.name)
+        model_dict[model_filename.split("_")[2]] = {"fit": model_filepath}
+
+    fish_list = np.arange(len(model_dict.keys()))
+
+    model_parameter_median_dict = {p["label"]: {} for p in parameter_list}
+    model_parameter_dict = {p["label"]: {} for p in parameter_list}
+    model_parameter_median_dict["score"] = {}
+    model_parameter_dict["score"] = {}
+    model_parameter_median_array = np.zeros((len(parameter_list)+1, len(fish_list)))
+    for i_model, id_model in enumerate(model_dict.keys()):
+        df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
+        # id_fish = id_model[:2]
+
+        id_fish = i_model
+        if from_best_model:
+            best_score = np.min(df_model_fit_list['score'])
+            df_model_fit_list = df_model_fit_list.loc[df_model_fit_list['score'] == best_score]
+
+        model_parameter_median_dict["score"][id_fish] = np.median(df_model_fit_list["score"])
+        model_parameter_dict["score"][id_fish] = np.array(df_model_fit_list["score"])
+        model_parameter_median_array[0, i_model] = np.median(df_model_fit_list["score"])
 
         for i_p, p in enumerate(parameter_list):
-            p_target = df_target[p["param"]]
-            plot_p = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None,
-                                     xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_here,
-                                     errorbar_area=False, ymin=p["min"], ymax=p["max"],
-                                     yticks=[p["min"], p["mean"], p["max"]],
-                                     yl=f"{p['label']}",
-                                     xl="iteration",  # if i_p == len(parameter_list)-1 else None,
-                                     xmin=0.5, xmax=2.5,
-                                     xticks=[1, 2],  # if i_p == len(parameter_list)-1 else None,
-                                     xticklabels=["0", "1500"],  # if i_p == len(parameter_list)-1 else None,
-                                     # xticklabels_rotation=45 if i_p == len(parameter_list)-1 else None,
-                                     hlines=[df_target[p["param"]][0]])
-            # ypos -= (plot_height + padding)
-            xpos += (plot_width_here + padding)
+            p_median = np.median(df_model_fit_list[p["label"]])
+            model_parameter_median_dict[p["label"]][id_fish] = p_median  # (p_median - p["min"]) / (p["max"] - p["min"])
+            model_parameter_dict[p["label"]][id_fish] = np.array(df_model_fit_list[p["label"]])  # (np.array(df_model_fit_list[p["label"]]) - p["min"]) / (p["max"] - p["min"])
+            model_parameter_median_array[i_p+1, i_model] = p_median
+
+            if id_model not in raw_data_dict_per_fish[p["label"]].keys():
+                raw_data_dict_per_fish[p["label"]][id_model] = [p_median]
+            else:
+                raw_data_dict_per_fish[p["label"]][id_model].append(p_median)
+
+            raw_data_dict[p["label"]].append(p_median)
+
+    if show_individual_estimations:
+        plot_height_here = plot_height * 3
+        number_fish = model_parameter_median_array.shape[1]
+        fish_id_array = np.flip(np.arange(number_fish))
+
+        for i_p, p in enumerate(parameter_list):
+            vlines = [p["mean"]] if p["mean"] == 0 else []
+            if p["relevant_values"] is not None:
+                vlines.extend(p["relevant_values"])
+            plot_individual = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None, xpos=xpos, ypos=ypos,
+                                             plot_height=plot_height_here, plot_width=plot_width_here,
+                                             yl="Fish ID" if i_p == 0 else None, ymin=0-0.5, ymax=number_fish-0.5, yticks=None,
+                                             xmin=p["min"], xmax=p["max"], xticks=[p["min"], p["mean"], p["max"]],
+                                             xl=p['label_show'].capitalize(),
+                                             vlines=vlines)
             if i_p == 0:
                 i_plot_label += 1
+            xpos += plot_width_here + padding_short
 
-            p_fit_end_list = []
-            for path_fit in path_dir_repeat.glob(f"error_test_{test_id}_*_fit.hdf5"):
-                df_fit = pd.read_hdf(path_fit)
-                p_fit_start = df_fit[f"{p['param']}_value"][0]
-                p_fit_end = df_fit[f"{p['param']}_value"][len(df_fit)-1]
-                p_fit_end_list.append(p_fit_end)
-
-                plot_p.draw_line((1, 2), (p_fit_start, p_fit_end), lc=palette[i_p], lw=0.05, alpha=0.5)
-                plot_p.draw_scatter((1, 2), (p_fit_start, p_fit_end), pc=palette[i_p], ec=palette[i_p])
-
-            plot_p.draw_scatter([2], [np.median(p_fit_end_list)], pc="k")
+            plot_individual.draw_scatter(model_parameter_median_array[i_p + 1, :], fish_id_array, pc=palette[i_p], elw=0)
+        xpos = xpos_start
+        ypos -= plot_height_here + padding
 
 
-# fig.save(pathlib.Path.home() / 'Academics' / 'graphics' / 'pictures' / 'figures_for_papers' / 'behavior_model' / "figure_2_temp_per.pdf", open_file=True, tight=True)
-fig.save(pathlib.Path.home() / 'Desktop' / "figure_2_update.pdf", open_file=True, tight=style.page_tight)
+    plot_height_here = style.plot_height / 4
+
+    hist_model_parameter_median_dict = {}
+    bin_model_parameter_median_dict = {}
+    hist_model_parameter_median_dict[score_config["label"]], bin_model_parameter_median_dict[score_config["label"]] = StatisticsService.get_hist(
+            model_parameter_median_array[0, :], center_bin=True,  hist_range=[score_config["min"], score_config["max"]],
+            bins=number_bins_hist,  # int((score_config["max"] - score_config["min"])/0.1),
+            density=True
+        )
+    for i_p, p in enumerate(parameter_list):
+        hist_model_parameter_median_dict[p["label"]], bin_model_parameter_median_dict[p["label"]] = StatisticsService.get_hist(
+            model_parameter_median_array[i_p + 1, :], center_bin=True,  hist_range=[p["min"], p["max"]],
+            bins=number_bins_hist,  # int((p["max"]-p["min"])/0.1),
+            density=True
+        )
+        distribution_trajectory_dict[p["label"]] = hist_model_parameter_median_dict[p["label"]]
+        print(f"{p['label_show']} spans {(np.max(model_parameter_median_array[i_p + 1, :])-np.min(model_parameter_median_array[i_p + 1, :]))/(p['max']-p['min'])*100}% of the parameter space")
+        if p["label"] == "leak":
+            around_optimal_integration = hist_model_parameter_median_dict[p["label"]][9:18]
+            print(f"LEAK | {np.sum(around_optimal_integration)*100}% is around optimal")
+
+            optimal_integration = hist_model_parameter_median_dict[p["label"]][11:16]
+            print(f"LEAK | {np.sum(optimal_integration)*100}% is optimal")
+
+    # #####
+    for i_p, p in enumerate(parameter_list):
+        plot_n = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None, xpos=xpos, ypos=ypos,
+                                 plot_height=plot_height_here, plot_width=plot_width_here,
+                                 yl="Percentage fish (%)" if i_p == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 else None,
+                                 xmin=p["min"], xmax=p["max"], xticks=[p["min"], p["mean"], p["max"]], xl=p['label_show'].capitalize(),
+                                 vlines=[p["mean"]] if p["mean"] == 0 else [])
+
+        plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]] * 100,
+                         lc=palette[i_p])
+        if i_p == 0:
+            i_plot_label += 1
+        xpos = xpos + padding_short + plot_width_here
+
+    xpos = xpos_start
+    ypos = ypos - plot_height_here - padding_here
+    i_plot_label += 1
+
+
+# fig.save(Path.home() / 'Academics' / 'graphics' / 'pictures' / 'figures_for_papers' / 'behavior_model' / "figure_1_experiment_coh_temp.pdf", open_file=True, tight=True)
+fig.save(path_save / "figure_2.pdf", open_file=False, tight=style.page_tight)

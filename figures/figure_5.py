@@ -10,7 +10,6 @@ import scipy
 import pathlib
 
 from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import mannwhitneyu
 
 from analysis.personal_dirs.Roberto.utils.palette import Palette
@@ -42,7 +41,7 @@ analysed_parameter = StimulusParameterLabel.COHERENCE.value
 analysed_parameter_list = [0, 25, 50, 100]
 
 score_config = {
-    "label": "Loss",
+    "label": "loss",
     "min": 0,
     "max": 10
 }
@@ -75,50 +74,23 @@ parameter_list = [
 ]
 
 models_in_age_list = [
-    {"label_show": "5dpf",
-     "path": r"/media/roberto/TOSHIBA EXT/Academics/data/age_analysis/week_1-2-3_/5_dpf",
-     "path_data": r"/media/roberto/TOSHIBA EXT/Academics/data/age_analysis/week_1-2-3_/5_dpf/data_fish_all.hdf5",
-     "path_simulation": r"/media/roberto/TOSHIBA EXT/Academics/data/age_analysis/week_1-2-3_/5_dpf/data_synthetic_fish_all.hdf5",
-     # None  #
+    {"label_fish_group": "-wt",
+     "label_show": "scn1lab +/+",
+     "path": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/wt",
+     "path_data": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/wt/data_fish_all-wt.hdf5",
+     "path_simulation": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/wt/data_synthetic_fish_all-wt.hdf5",
      "dashes": None,
      "color": "k",
      "alpha": 1},
-    # {"label_show": "6dpf",
-    #  "path": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\6_dpf",
-    #  "path_data": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\6_dpf\data_fish_all.hdf5",
-    #  # None  #
-    #  "path_simulation": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\6_dpf\data_synthetic_fish_all.hdf5",
-    #  # None  #
-    #  "dashes": None,
-    #  "color": "k",
-    #  "alpha": 1},
-    # {"label_show": "7dpf",
-    #  "path": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\7_dpf",
-    #  "path_data": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\7_dpf\data_fish_all.hdf5",
-    #  # None  #
-    #  "path_simulation": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\7_dpf\data_synthetic_fish_all.hdf5",
-    #  # None  #
-    #  "dashes": None,
-    #  "color": "k",
-    #  "alpha": 1},
-    # {"label_show": "8dpf",
-    #  "path": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\8_dpf",
-    #  "path_data": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\8_dpf\data_fish_all.hdf5",
-    #  # None  #
-    #  "path_simulation": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\8_dpf\data_synthetic_fish_all.hdf5",
-    #  # None  #
-    #  "dashes": None,
-    #  "color": "k",
-    #  "alpha": 1},
-    # {"label_show": "9dpf",
-    #  "path": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\9_dpf",
-    #  "path_data": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\9_dpf\data_fish_all.hdf5",
-    #  # None  #
-    #  "path_simulation": r"C:\Users\Roberto\Academics\data\dots_constant\age_analysis\week_1-2-3_\9_dpf\data_synthetic_fish_all.hdf5",
-    #  # None  #
-    #  "dashes": None,
-    #  "color": "k",
-    #  "alpha": 1},
+    {"label_fish_group": "-het",
+     "label_show": "scn1lab +/-",
+     "path": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/het",
+     "path_data": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/het/data_fish_all-het.hdf5",
+     "path_simulation": r"/media/roberto/TOSHIBA EXT/Academics/data/harpaz_2021/scn1lab_zirc_20200710/attempt_0/het/data_synthetic_fish_all-het.hdf5",
+     "dashes": None,
+     "color": "k",  # "#004AAA",
+     "alpha": 1,  # 0.25
+     },
 ]
 
 for m in models_in_age_list:
@@ -157,7 +129,7 @@ df = pd.DataFrame()
 model_list = []
 loss = {}
 parameter_error = {p["label"]: {} for p in parameter_list}
-label_fish_time =None
+label_fish_group = None
 max_n_models = 50
 number_bins_hist = 15
 
@@ -167,45 +139,43 @@ show_coherence_vs_interbout_interval = True
 show_distribution_parameters = True
 show_corr_matrices = True
 
+
 if show_loss_reduction:
-    ypos = ypos - padding_short
+    plot_width_here = plot_width  # 1.3
+    # ypos = ypos - padding_short
     for i_age, models_in_age in enumerate(models_in_age_list):
+        plot_loss = fig.create_plot(plot_label=alphabet[i_plot_label] if i_age == 0 else None,
+                                    plot_title=models_in_age["label_show"],
+                                    xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width_here,
+                                 ymin=0, ymax=20, yticks=[0, 10, 20], yl="Loss",
+                                 xl=None if i_age == 0 else "Iteration", xmin=0.5, xmax=2.5, xticks=None if i_age == 0 else [1, 2],
+                                 xticklabels=None if i_age == 0 else ["0", "1500"])
+        if i_age == len(models_in_age_list) - 1:
+            pad = padding
+        else:
+            pad = padding_short
+        # xpos = xpos + pad + plot_width_here
+        ypos = ypos - padding - plot_height
+
         loss_list = []
-        loss_start_list = []
-        loss_end_list = []
+
         for path_error in pathlib.Path(models_in_age["path"]).glob("error_fish_*.hdf5"):
             df_error = pd.read_hdf(path_error)
-            loss_start_list.append(df_error["score"][0])
-            # loss_start = df_error["score"][0]
-
+            loss_start = df_error["score"][0]
             loss_end = df_error["score"][len(df_error)-1]
-            loss_end_list.append(loss_end)
             loss_list.append(loss_end)
-
-        plot_title = f"{models_in_age['label_show']}\n" fr"n={len(loss_list)}"
-        plot_loss = fig.create_plot(plot_label=alphabet[i_plot_label] if i_age == 0 else None,
-                                    plot_title=plot_title,
-                                    xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width,
-                                    ymin=0, ymax=20, yticks=[0, 10, 20] if i_age == 0 else None,
-                                    yl="Loss" if i_age == 0 else None,
-                                    xl="Iteration", xmin=0.5, xmax=2.5, xticks=[1, 2],
-                                    xticklabels=["0", "1500"])
-        ypos = ypos
-        xpos += plot_width + padding_short
-
-        for i_loss in range(len(loss_list)):
-            loss_start = loss_start_list[i_loss]
-            loss_end = loss_end_list[i_loss]
             plot_loss.draw_line((1, 2), (loss_start, loss_end), lc="k", lw=0.05, alpha=0.5)
             plot_loss.draw_scatter((1, 2), (loss_start, loss_end), ec="k", pc="k", alpha=0.5)
 
-        # plot_loss.draw_text(1.5, 20, fr"{np.mean(loss_list):0.02f}$\pm${np.std(loss_list):0.02f}")
-    ypos = ypos - padding - plot_height
-    xpos = xpos_start
+        plot_loss.draw_text(2.5, 10, fr"n={len(loss_list)}")
+    # ypos = ypos
+    # xpos += plot_width + padding_short
     i_plot_label += 1
+    xpos = xpos + pad + plot_width_here
+    ypos = ypos_start
 
 if show_psychometric_curve:
-    # plot_height = plot_height
+    plot_width_here = plot_width  # 1.3
 
     for i_m, m in enumerate(models_in_age_list):
         df_data = m["df_data"]
@@ -233,43 +203,40 @@ if show_psychometric_curve:
         parameter_list_sim = np.array([int(p) for p in parameter_list_sim])
 
         plot_0 = fig.create_plot(plot_label=alphabet[i_plot_label] if i_m == 0 else None, xpos=xpos, ypos=ypos, plot_height=plot_height,
-                                 plot_width=plot_width,
+                                 plot_width=plot_width_here,
                                  errorbar_area=True,
-                                 # xl=analysed_parameter_label,
-                                 xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list),
-                                 xticks=None,  # xticks=[int(p) for p in analysed_parameter_list],
-                                 yl="Percentage\ncorrect swims (%)" if i_m == 0 else None, ymin=45, ymax=100, yticks=[50, 100] if i_m == 0 else None, hlines=[50])
+                                 xl=None if i_m == 0 else analysed_parameter_label, xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list), xticks=None if i_m == 0 else [int(p) for p in analysed_parameter_list],
+                                 yl="Percentage\ncorrect swims [%]", ymin=45, ymax=100, yticks=[50, 75, 100], hlines=[0.5])
 
         # draw
-        plot_0.draw_line(x=parameter_list_data, y=correct_bout_list_data*100,
-                         errorbar_area=True, yerr=np.array(std_correct_bout_list_data)*100,  # / np.sqrt(number_individuals),
+        plot_0.draw_line(x=parameter_list_data, y=correct_bout_list_data * 100,
+                         errorbar_area=True, yerr=np.array(std_correct_bout_list_data) * 100,  # / np.sqrt(number_individuals),
                          lc=m["color"], lw=1, alpha=m["alpha"])
-        plot_0.draw_line(x=parameter_list_sim, y=correct_bout_list_sim*100,
-                         errorbar_area=True, yerr=np.array(std_correct_bout_list_sim)*100,  # / np.sqrt(number_models),
+        plot_0.draw_line(x=parameter_list_sim, y=correct_bout_list_sim * 100,
+                         errorbar_area=True, yerr=np.array(std_correct_bout_list_sim) * 100,  # / np.sqrt(number_models),
                          lc=m["color"], lw=1, alpha=m["alpha"], line_dashes=(1, 2))
 
         if i_m == len(models_in_age_list) - 1:
             pad = padding
         else:
             pad = padding_short
-        xpos = xpos + pad + plot_width
+        # xpos = xpos + pad + plot_width_here
+        ypos = ypos - padding - plot_height
 
     i_plot_label += 1
-    ypos = ypos - padding - plot_height
-    xpos = xpos_start
+    xpos = xpos + pad + plot_width_here
+    ypos = ypos_start
+    # ypos = ypos - padding - plot_height
+    # xpos = xpos_start
 
 if show_coherence_vs_interbout_interval:
-    # plot_height = 1
-    # plot_width = 1
+    plot_width_here = plot_width  # 1.3
 
     for i_m, m in enumerate(models_in_age_list):
         df_data = m["df_data"]
         df_data_filtered = df_data.query(query_time)
         df_data_filtered = df_data_filtered[df_data_filtered[analysed_parameter].isin(analysed_parameter_list)]
-        original_len = len(df_data_filtered)
         df_data_filtered = df_data_filtered[df_data_filtered[CorrectBoutColumn] != -1]
-        filtered_len = len(df_data_filtered)
-        print(f"EXCLUDE STRAIGHT BOUT | {(original_len - filtered_len)/original_len*100:.03f}% dropped")
         ibi_quantiles = np.quantile(df_data_filtered[ResponseTimeColumn], [0.05, 0.95])
         df_data_filtered = df_data_filtered[np.logical_and(df_data_filtered[ResponseTimeColumn] > ibi_quantiles[0], df_data_filtered[ResponseTimeColumn] < ibi_quantiles[1])]
         try:
@@ -296,10 +263,11 @@ if show_coherence_vs_interbout_interval:
 
         # plot
         plot_0 = fig.create_plot(plot_label=alphabet[i_plot_label] if i_m == 0 else None, xpos=xpos, ypos=ypos, plot_height=plot_height,
-                                 plot_width=plot_width,
+                                 plot_width=plot_width_here,
                                  errorbar_area=True,
-                                 xl=analysed_parameter_label, xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list), xticks=[int(p) for p in analysed_parameter_list],
-                                 yl="Interbout\ninterval (s)" if i_m == 0 else None, ymin=0, ymax=3, yticks=[0, 1.50, 3] if i_m == 0 else None)
+                                 xl=None if i_m == 0 else analysed_parameter_label, xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list), xticks=None if i_m == 0 else [int(p) for p in analysed_parameter_list],
+                                 yl="Interbout\ninterval (s)", ymin=0, ymax=3, yticks=[0, 1.50, 3])
+        # i_plot_label += 1
 
         # draw
         plot_0.draw_line(x=parameter_list_data, y=interbout_interval_list_data,
@@ -313,7 +281,8 @@ if show_coherence_vs_interbout_interval:
             pad = padding
         else:
             pad = padding_short
-        xpos = xpos + pad + plot_width
+        ypos = ypos - padding - plot_height
+        # xpos = xpos + pad + plot_width_here
 
     i_plot_label += 1
     ypos = ypos - padding - plot_height
@@ -322,9 +291,9 @@ if show_coherence_vs_interbout_interval:
 if show_distribution_parameters:
     from_best_model = True
     plot_height_here = 0.25
+    plot_width_here = 0.9
     padding_here = 0.05
-
-    path_noise_statistics = r"C:\Users\Roberto\Academics\data\benchmarking\weight_nosmooth_2coh\results\df_noise"
+    path_noise_statistics = r"/media/roberto/TOSHIBA EXT/Academics/data/benchmarking/weight_nosmooth_2coh/results/df_noise"
     noise_statistics = pd.read_hdf(path_noise_statistics)
     number_resampling = 10000
 
@@ -342,8 +311,8 @@ if show_distribution_parameters:
             #     break
             # n_models += 1
             model_filename = str(model_filepath.name)
-            if label_fish_time is not None:
-                if model_filename.split("_")[2].endswith(label_fish_time):
+            if label_fish_group is not None:
+                if model_filename.split("_")[2].endswith(label_fish_group):
                     model_dict[model_filename.split("_")[2]] = {"fit": model_filepath}
             else:
                 model_dict[model_filename.split("_")[2]] = {"fit": model_filepath}
@@ -386,9 +355,9 @@ if show_distribution_parameters:
 
             noise_statistics_p = dict(noise_statistics[p["label"]])
             noise_statistics_p["mu"] = noise_statistics_p["mu"] * (
-                        p["max"] - p["min"])  # rescale mean to actual search space width (it was normalized before)
+                    p["max"] - p["min"])  # rescale mean to actual search space width (it was normalized before)
             noise_statistics_p["b"] = noise_statistics_p["b"] * (
-                        p["max"] - p["min"])  # rescale std to actual search space width (it was normalized before)
+                    p["max"] - p["min"])  # rescale std to actual search space width (it was normalized before)
             noise_statistics_p["size"] = len(model_parameter_median_array[i_p + 1, :])
             # model_parameter_sampling_list = StatisticsService.sample_random(array=model_parameter_median_array[i_p + 1, :], sample_number=number_resampling, sample_percentage_size=1, with_replacement=True, add_noise=noise_statistics_p)
             model_parameter_sampling_list = StatisticsService.sample_random(
@@ -396,6 +365,7 @@ if show_distribution_parameters:
                 sample_percentage_size=1, with_replacement=True, add_noise=None)
 
             median_list = np.array([np.median(m) for m in model_parameter_sampling_list])
+
             quantiles_groups[p["label"]][i_age, :] = np.quantile(median_list, [0.05, 0.5, 0.95])
             print(
                 f"group {models_in_age['label_show']} | {p['label_show']}: {quantiles_groups[p['label']][i_age, 1]:.05f} [{quantiles_groups[p['label']][i_age, 0]:.05f}, {quantiles_groups[p['label']][i_age, 2]:.05f}]")
@@ -418,32 +388,30 @@ if show_distribution_parameters:
     for i_age in range(len(models_in_age_list)):
         for i_p, p in enumerate(parameter_list):
             plot_n = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 and i_age == 0 else None, xpos=xpos, ypos=ypos,
-                                     plot_height=plot_height_here, plot_width=plot_width,
-                                     yl="percentage fish [%]" if i_p == 0 and i_age == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 and i_age == 0 else None,
-                                     xmin=p["min"], xmax=p["max"],
-                                     # xl=p['label'] if i_age == len(models_in_age_list)-1 else None,
-                                     # xticks=[p["min"], p["mean"], p["max"]] if i_age == len(models_in_age_list)-1 else None,
-                                     vlines=[p["mean"]] if p["mean"] == 0 else [])
+                                     plot_height=plot_height_here, plot_width=plot_width_here,
+                                     yl="Percentage fish (%)" if i_p == 0 and i_age == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 and i_age == 0 else None,
+                                     xl=p['label_show'] if i_age == len(models_in_age_list)-1 else None, xmin=p["min"], xmax=p["max"],
+                                     xticks=[p["min"], p["mean"], p["max"]] if i_age == len(models_in_age_list)-1 else None, vlines=[p["mean"]] if p["mean"] == 0 else [])
 
             plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]][:, i_age] * 100,
                              line_dashes=models_in_age_list[i_age]["dashes"], lc=palette[i_p], alpha=models_in_age_list[i_age]["alpha"], label=models_in_age_list[i_age]["label_show"] if i_p == len(parameter_list)-1 else None)
 
             # i_plot_label += 1
-            xpos = xpos + padding_short + plot_width
+            xpos = xpos + padding_short + plot_width_here
 
         xpos = xpos_start
         ypos = ypos - plot_height_here - padding_here
     i_plot_label += 1
 
-    # pairs_to_compare_list = list(itertools.combinations(range(len(models_in_age_list)), 2))
-    # for pairs_to_compare in pairs_to_compare_list:
-    #     for i_p, p in enumerate(parameter_list):
-    #         data_0 = raw_data_dict[p["label"]][pairs_to_compare[0]]
-    #         data_1 = raw_data_dict[p["label"]][pairs_to_compare[1]]
-    #
-    #         U1, p_value = mannwhitneyu(data_0, data_1, method="exact")
-    #
-    #         print(f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | {p['label']} | parameter p value {p_value}")
+    pairs_to_compare_list = list(itertools.combinations(range(len(models_in_age_list)), 2))
+    for pairs_to_compare in pairs_to_compare_list:
+        for i_p, p in enumerate(parameter_list):
+            data_0 = raw_data_dict[p["label"]][pairs_to_compare[0]]
+            data_1 = raw_data_dict[p["label"]][pairs_to_compare[1]]
+
+            U1, p_value = mannwhitneyu(data_0, data_1, method="exact")
+
+            print(f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | {p['label']} | parameter p value {p_value}")
 
     xpos = xpos_start
     ypos = ypos - (padding-padding_here)
@@ -452,14 +420,14 @@ if show_distribution_parameters:
     # BOOTSTRAP TEST PLOT
     plot_list = []
     for i_p, p in enumerate(parameter_list):
-        plot_n = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p==0 else None, xpos=xpos, ypos=ypos,
-                                 plot_height=plot_height, plot_width=plot_width, errorbar_area=False,
+        plot_n = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None, xpos=xpos, ypos=ypos,
+                                 plot_height=plot_height, plot_width=plot_width_here, errorbar_area=False,
                                  ymin=0, ymax=len(models_in_age_list) + 1,
                                  yticks=np.arange(len(models_in_age_list), 0, -1) if i_p == 0 else None,
                                  yticklabels=[g["label_show"] for g in models_in_age_list] if i_p == 0 else None,
                                  xl=p['label_show'].capitalize(), xmin=p["min"], xmax=p["max"],
                                  xticks=[p["min"], p["mean"], p["max"]], vlines=[p["mean"]] if p["mean"] == 0 else [])
-        xpos = xpos + padding_short + plot_width
+        xpos = xpos + padding_short + plot_width_here
         for i_group, models_in_group in enumerate(models_in_age_list):
             plot_n.draw_line(quantiles_groups[p["label"]][i_group, :],
                              np.ones(quantiles_groups[p["label"]].shape[1]) * (len(models_in_age_list) - i_group),
@@ -471,19 +439,17 @@ if show_distribution_parameters:
         parameter_range = p["max"] - p["min"]
         x_sig = p["max"] - parameter_range / 2 + parameter_range / 10
         is_sig = False
-        print(f"{p['label_show']}")
         for pairs_to_compare in pairs_to_compare_list:
             # data_0 = quantiles_groups[p["label"]][pairs_to_compare[0], :]
             # data_1 = quantiles_groups[p["label"]][pairs_to_compare[1], :]
-            #
-            # p_value = np.mean()
             #
             # max_start = np.max([data_0[0], data_1[0]])
             # min_end = np.min([data_0[-1], data_1[-1]])
             #
             # overlap = min_end - max_start
             #
-            # print(f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | {p['label_show']} | overlap: {overlap}")
+            # print(
+            #     f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | {p['label']} | overlap: {overlap}")
             #
             # plot_n = plot_list[i_p]
             # if overlap < 0:
@@ -510,7 +476,8 @@ if show_distribution_parameters:
             median_control_delta = np.abs(median_control_0 - median_control_1)
 
             p_value = np.mean(median_control_delta >= median_delta)
-            print(f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | p = {p_value}")
+            print(
+                f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | p = {p_value}")
 
             plot_n = plot_list[i_p]
             if p_value < 0.01:
@@ -524,7 +491,7 @@ if show_distribution_parameters:
 
         if is_sig:
             plot_n.draw_text(x=x_sig + parameter_range / 6, y=np.ceil(len(models_in_age_list) / 2), text="*",
-                             textlabel_rotation=-90)
+                             textlabel_rotation=90)
     i_plot_label += 1
     xpos = xpos_start
     ypos = ypos - (plot_height + padding)
@@ -536,8 +503,8 @@ if show_corr_matrices:
     sample_percentage_size = 1
     corr_threshold = 0.7
     no_corr_threshold = 0.3
-    path_dir_control = pathlib.Path(r"C:\Users\Roberto\Academics\data\benchmarking\weight_nosmooth\_30")
-    path_corr_tensor_fit = pathlib.Path(r"C:\Users\Roberto\Academics\data\benchmarking\weight_nosmooth\_30\results\corr_tensor_fit.pkl")
+    path_dir_control = pathlib.Path(r"/media/roberto/TOSHIBA EXT/Academics/data/benchmarking/weight_nosmooth/_30")
+    path_corr_tensor_fit = pathlib.Path(r"/media/roberto/TOSHIBA EXT/Academics/data/benchmarking/weight_nosmooth/_30/results/corr_tensor_fit.pkl")
 
     model_dict = {}
     error_list = np.array([])
@@ -664,6 +631,7 @@ if show_corr_matrices:
     xpos = xpos_start
     ypos -= padding + plot_size_matrix
 
-fig.save(pathlib.Path.home() / 'Desktop' / f"figure_3_age_analysis.pdf", open_file=True, tight=True)
+
+fig.save(pathlib.Path.home() / 'temp' / f"figure_4_mutation_analysis.pdf", open_file=True, tight=True)
 
 

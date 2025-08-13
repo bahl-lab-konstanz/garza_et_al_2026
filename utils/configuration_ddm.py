@@ -1,0 +1,45 @@
+score_config = {
+    "label": "loss",
+    "min": 0,
+    "max": 10
+}
+
+parameter_list = [
+    {"label": "noise_sigma",
+     "label_show": "diffusion",
+     "example_value": 1,
+     "min": 0.0,
+     "mean": 1.5,
+     "max": 3.0,
+     "relevant_values": None},
+    {"label": "scaling_factor",
+     "label_show": "drift",
+     "example_value": 1,
+     "min": -3.0,
+     "mean": 0.0,
+     "max": 3.0,
+     "relevant_values": None},
+    {"label": "leak",
+     "label_show": "leak",
+     "example_value": 0.3,
+     "min": -3.0,
+     "mean": 0.0,
+     "max": 3.0,
+     "relevant_values": (-1, 1)},
+    {"label": 'residual_after_bout',
+     "label_show": "reset",
+     "example_value": 0.1,
+     "min": 0.0,
+     "mean": 0.5,
+     "max": 1.0,
+     "relevant_values": None},
+    {"label": 'inactive_time',
+     "label_show": "delay",
+     "example_value": 0.05,
+     "min": 0.0,
+     "mean": 0.5,
+     "max": 1.0,
+     "relevant_values": None},
+]
+
+dt = 0.01
