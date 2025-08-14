@@ -21,14 +21,18 @@ class BehavioralModelStyle(Style):
 
     font_size_label = 8
     font_size_text = 6
+    linewidth = 1
 
-    padding = 2
     plot_size = 1
+
+    padding = 1.5
+    padding_in_plot = 0.5
 
     plot_height = 1
 
     plot_width = 1
     plot_width_large = 3
+    plot_width_small = 0.9
 
     xpos_start = 2
     ypos_start = 27

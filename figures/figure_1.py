@@ -4,19 +4,19 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-
 from analysis.utils.figure_helper import Figure
 from rg_behavior_model.figures.style import BehavioralModelStyle
 from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.utils.configuration_ddm import dt
-from rg_behavior_model.utils.configuration_experiment import time_start_stimulus, time_end_stimulus, \
-    time_experimental_trial, StimulusParameterLabel, Keyword, ResponseTimeColumn, CorrectBoutColumn
+from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
+from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
+from rg_behavior_model.utils.constants import StimulusParameterLabel
 from rg_modeling_framework.src.service.statistics_service import StatisticsService
 
 # env
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
 path_save = Path(env['PATH_SAVE'])
+path_data = path_dir / "base_dataset"
 
 # configuration plot
 style = BehavioralModelStyle()
@@ -30,8 +30,8 @@ plot_height = style.plot_height
 plot_height_small = plot_height / 2.5
 plot_width = style.plot_width * 3/2
 
-padding = style.padding * 3/4
-padding_plot = 0.5
+padding = style.padding
+padding_plot = style.padding_in_plot
 padding_vertical = plot_height_small
 
 palette = style.palette["default"]
@@ -49,20 +49,15 @@ show_cv = False
 
 
 # parameters_experiment
-coherence_list = [0, 25, 50, 100]
 coherence_label = StimulusParameterLabel.COHERENCE.value  # StimulusParameterLabel.PERIOD.value  #
 analysed_parameter_label = "Coh (%)"
-query_time = f'start_time > {time_start_stimulus} and end_time < {time_end_stimulus}'
+query_time = f'start_time > {ConfigurationExperiment.time_start_stimulus} and end_time < {ConfigurationExperiment.time_end_stimulus}'
 
 df_dict = {}
 all_label = "all"
-fish_0_label = "001"
-fish_1_label = "002"
-fish_2_label = "003"
-# fish_3_label = "504"
-fish_to_include_list = [fish_0_label, fish_1_label, fish_2_label, all_label]
+fish_to_include_list = ConfigurationExperiment.example_fish_list
 for fish in fish_to_include_list:
-    df = pd.read_hdf(path_dir / f"data_fish_{fish}.hdf5")
+    df = pd.read_hdf(path_data / f"data_fish_{fish}.hdf5")
     df_dict[fish] = df  # BehavioralProcessing.remove_fast_straight_bout(df, threshold_response_time=100)
 
 # Make a standard figure
@@ -71,7 +66,7 @@ fig = Figure()
 if show_trial_structure:
     experiment_list = [
         {"analysed_parameter": StimulusParameterLabel.COHERENCE.value,
-         "analysed_parameter_list": [0, 25, 50, 100],
+         "analysed_parameter_list": ConfigurationExperiment.coherence_list,
          "analysed_parameter_label": "Coh",
          "unit": "%",
          "input_function": lambda t, coh: coh/100,
@@ -81,9 +76,10 @@ if show_trial_structure:
     ]
 
     # parameters
+    fish_0_label = ConfigurationExperiment.example_fish_list[0]
     df_sample = df_dict[fish_0_label]
-    time_stimulus = np.arange(time_start_stimulus, time_end_stimulus+2*dt, dt)
-    time_rest = np.arange(dt, time_start_stimulus, dt)
+    time_stimulus = np.arange(ConfigurationExperiment.time_start_stimulus, ConfigurationExperiment.time_end_stimulus+2*ConfigurationDDM.dt, ConfigurationDDM.dt)
+    time_rest = np.arange(ConfigurationDDM.dt, ConfigurationExperiment.time_start_stimulus, ConfigurationDDM.dt)
 
     plot_height_here = plot_height * 0.2
     padding_vert_here = plot_height * 0.05
@@ -99,7 +95,7 @@ if show_trial_structure:
                                            xpos=xpos, ypos=ypos_here - (padding_vert_here + plot_height_here) * number_plots - height_drift,
                                            plot_height=plot_height_here,
                                            plot_width=plot_width_here,
-                                           xmin=0, xmax=time_experimental_trial,
+                                           xmin=0, xmax=ConfigurationExperiment.time_experimental_trial,
                                            ymin=-0.1, ymax=1.1,
                                            legend_xpos=xpos + plot_width_here,
                                            legend_ypos=ypos_here + 0.3 - (padding_vert_here + plot_height_here) * number_plots - height_drift)
@@ -110,19 +106,19 @@ if show_trial_structure:
 
             trial_stimulus = np.zeros(len(time_stimulus))
             for i_time, time in enumerate(time_stimulus):
-                if time > time_start_stimulus and time < time_end_stimulus:
+                if time > ConfigurationExperiment.time_start_stimulus and time < ConfigurationExperiment.time_end_stimulus:
                     trial_stimulus[i_time] = ex["input_function"](time, parameter)
             color = ex["palette"][i_param]
 
             plot_section.draw_line(time_rest, np.zeros(len(time_rest)), lc="black")
-            plot_section.draw_line(time_rest + time_end_stimulus, np.zeros(len(time_rest)), lc="black")
+            plot_section.draw_line(time_rest + ConfigurationExperiment.time_end_stimulus, np.zeros(len(time_rest)), lc="black")
             plot_section.draw_line(time_stimulus, trial_stimulus, lc=color,
                                    label=f"{ex['analysed_parameter_label']} = {int(parameter)}{ex['unit']}")
 
             plot_section = fig.create_plot(xpos=xpos, ypos=ypos_here - (padding_vert_here + plot_height_here) * number_plots - height_drift,
                                            plot_height=plot_height_here,
                                            plot_width=plot_width_here,
-                                           xmin=0, xmax=time_experimental_trial,
+                                           xmin=0, xmax=ConfigurationExperiment.time_experimental_trial,
                                            ymin=0, ymax=1)
 
             def color_timestamp(timestamp):
@@ -160,11 +156,11 @@ if show_distribution_change_angles:
                              vspans=[[min_angle, -threshold_side, style.palette["correct_incorrect"][1], 1],
                                      [threshold_side, max_angle, style.palette["correct_incorrect"][0], 1]])
 
-    query_time = f"start_time > {time_start_stimulus} and end_time < {time_end_stimulus} " \
+    query_time = f"start_time > {ConfigurationExperiment.time_start_stimulus} and end_time < {ConfigurationExperiment.time_end_stimulus} " \
                  f"and estimated_orientation_change < {max_angle} and estimated_orientation_change > {min_angle}"  # slice over time and angle
     df_filtered = df.query(query_time)
     legends = []
-    for i_coherence, coherence in enumerate(coherence_list):
+    for i_coherence, coherence in enumerate(ConfigurationExperiment.coherence_list):
         coherence_condition_is_met = list(df_filtered[StimulusParameterLabel.COHERENCE.value] == coherence)
         df_coh = df_filtered[coherence_condition_is_met]
         df_coh['flipped_estimated_orientation_change'] = BehavioralProcessing.flip_column(df_coh, 'estimated_orientation_change', inverted_direction=inverted_direction)
@@ -223,7 +219,7 @@ if show_fish_trajectory:
 
     # define temporary dataframe
     for trial_id in trial_id_list:
-        df_filtered = df[df[CorrectBoutColumn] != -1]
+        df_filtered = df[df[ConfigurationExperiment.CorrectBoutColumn] != -1]
         try:
             df_filtered = df_filtered.xs(fish_id, level='experiment_ID')
         except KeyError:
@@ -241,7 +237,7 @@ if show_fish_trajectory:
         plot_0.draw_line(df_filtered[x_position_column], df_filtered[y_position_column], lc="gray", alpha=0.50)
         color_list = []
         for i, row in df_filtered.iterrows():
-            if row[CorrectBoutColumn] == 1:
+            if row[ConfigurationExperiment.CorrectBoutColumn] == 1:
                 color_list.append(style.palette["correct_incorrect"][0])
             else:
                 color_list.append(style.palette["correct_incorrect"][1])
@@ -261,7 +257,7 @@ if show_psychometric_curve:
     # fetch
     df = df_dict[all_label]
     df_filtered_all = df.query(query_time)
-    df_filtered_all = df_filtered_all[df_filtered_all[coherence_label].isin(coherence_list)]
+    df_filtered_all = df_filtered_all[df_filtered_all[coherence_label].isin(ConfigurationExperiment.coherence_list)]
     id_fish_list = list(df_filtered_all.index.unique("experiment_ID"))
 
     # computation
@@ -281,22 +277,14 @@ if show_psychometric_curve:
 
     for i_id, id in enumerate(id_fish_list):
         df_fish = df_filtered_all.xs(id, level="experiment_ID")
-        df_fish_filtered = df_fish[df_fish[coherence_label].isin(coherence_list)]
+        df_fish_filtered = df_fish[df_fish[coherence_label].isin(ConfigurationExperiment.coherence_list)]
         # computation
         parameter_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters(
             df_fish_filtered, analysed_parameter=coherence_label)
         correct_bout_list *= 100
 
         # plot
-        if id == int(fish_0_label):
-            color_line = "gray"
-            lw = 1
-            show_label = True
-        elif id == int(fish_1_label):
-            color_line = "gray"
-            lw = 1
-            show_label = True
-        elif id == int(fish_2_label):
+        if id in ConfigurationExperiment.example_fish_list:
             color_line = "gray"
             lw = 1
             show_label = True
@@ -332,9 +320,9 @@ if show_coherence_vs_interbout_interval:
 
     df = df_dict["all"]
     df_filtered = df.query(query_time)
-    df_filtered = df_filtered[df_filtered[coherence_label].isin(coherence_list)]
+    df_filtered = df_filtered[df_filtered[coherence_label].isin(ConfigurationExperiment.coherence_list)]
     # computation
-    parameter_list, interbout_interval_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(df_filtered, analysed_parameter=analysed_parameter, column_name=ResponseTimeColumn)
+    parameter_list, interbout_interval_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(df_filtered, analysed_parameter=coherence_label, column_name=ConfigurationExperiment.ResponseTimeColumn)
     parameter_list = np.array([int(p) for p in parameter_list])
 
     # plot
@@ -350,21 +338,13 @@ if show_coherence_vs_interbout_interval:
 
     for i_id, id in enumerate(id_fish_list):
         df_fish = df_filtered_all.xs(id, level="experiment_ID")
-        df_fish_filtered = df_fish[df_fish[coherence_label].isin(coherence_list)]
+        df_fish_filtered = df_fish[df_fish[coherence_label].isin(ConfigurationExperiment.coherence_list)]
         # computation
         parameter_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters(
-            df_fish_filtered, analysed_parameter=coherence_label, column_name=ResponseTimeColumn)
+            df_fish_filtered, analysed_parameter=coherence_label, column_name=ConfigurationExperiment.ResponseTimeColumn)
 
         # plot
-        if id == int(fish_0_label):
-            color_line = "gray"
-            lw = 1
-            show_label = True
-        elif id == int(fish_1_label):
-            color_line = "gray"
-            lw = 1
-            show_label = True
-        elif id == int(fish_2_label):
+        if id in ConfigurationExperiment.example_fish_list:
             color_line = "gray"
             lw = 1
             show_label = True
@@ -379,9 +359,8 @@ if show_coherence_vs_interbout_interval:
 
     # plot
     parameter_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
-        df_filtered_all, analysed_parameter=coherence_label, column_name=ResponseTimeColumn)
+        df_filtered_all, analysed_parameter=coherence_label, column_name=ConfigurationExperiment.ResponseTimeColumn)
     plot_0.draw_line(x=parameter_list, y=interbout_interval_list,
-                     # errorbar_area=True, yerr=std_correct_bout_list / number_individuals,
                      lc="k", lw=1, line_dashes=line_dashes)
     coefficient_variation_ibi = std_correct_bout_list / correct_bout_list * 100
     print(f"mean IBI: {correct_bout_list}")
@@ -410,7 +389,7 @@ if show_rt_distributions:
 
     for i_k, k in enumerate(df_dict.keys()):
         df = df_dict[k]
-        for i_param, parameter in enumerate(coherence_list):
+        for i_param, parameter in enumerate(ConfigurationExperiment.coherence_list):
             # plot
             line_dashes = None
             plot_title = None
@@ -430,7 +409,7 @@ if show_rt_distributions:
                                                             ymin=-y_limits[-1], ymax=y_limits[-1],
                                                             hlines=[0])
 
-            if i_param == len(coherence_list) - 1 and i_k == len(df_dict)-1:
+            if i_param == len(ConfigurationExperiment.coherence_list) - 1 and i_k == len(df_dict)-1:
                 y_location_scalebar = y_limits[-1] / 6
                 x_location_scalebar = x_limits[-1] / 6
                 plot_section[i_param].draw_line((1.7, 1.7), (y_location_scalebar, y_location_scalebar + 0.1), lc="k")
@@ -448,11 +427,11 @@ if show_rt_distributions:
             df_filtered = df_filtered.query(query_time)
 
             duration = np.sum(BehavioralProcessing.get_duration_trials_in_df(df_filtered,
-                                                                             fixed_time_trial=time_end_stimulus-time_start_stimulus))
+                                                                             fixed_time_trial=ConfigurationExperiment.time_end_stimulus - ConfigurationExperiment.time_start_stimulus))
 
             # plot distribution of data over coherence levels
-            data_corr = df_filtered[df_filtered[CorrectBoutColumn] == 1][ResponseTimeColumn]
-            data_err = df_filtered[df_filtered[CorrectBoutColumn] == 0][ResponseTimeColumn]
+            data_corr = df_filtered[df_filtered[ConfigurationExperiment.CorrectBoutColumn] == 1][ConfigurationExperiment.ResponseTimeColumn]
+            data_err = df_filtered[df_filtered[ConfigurationExperiment.CorrectBoutColumn] == 0][ConfigurationExperiment.ResponseTimeColumn]
 
             data_hist_value_corr, data_hist_time_corr = StatisticsService.get_hist(data_corr,
                                                                                    bins=np.arange(x_limits[0], x_limits[-1], (x_limits[-1]-x_limits[0])/50),
@@ -491,7 +470,7 @@ if show_cv:
                              xticks=[int(p) for p in parameter_list], yl="Coefficient variation (%)",
                              ymin=0, ymax=100,
                              yticks=[0, 50, 100])
-    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_accuracy, lc="k", lw=1, line_dashes=(1, 2), label="Percentage correct swims")
-    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_ibi, lc="k", lw=1, line_dashes=(0.1, 3), label="Interbout interval")
+    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_accuracy, lc="k", lw=1, line_dashes=(1, 2), label="Percentage correct swims (%)")
+    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_ibi, lc="k", lw=1, line_dashes=(0.1, 3), label="Interbout interval (s)")
 
 fig.save(path_save / "figure_1.pdf", open_file=True, tight=style.page_tight)

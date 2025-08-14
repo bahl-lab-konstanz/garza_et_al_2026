@@ -1,11 +1,18 @@
 from enum import Enum
 
-time_start_stimulus = 10  # seconds
-time_end_stimulus = 40  # seconds
-time_experimental_trial = 50  # seconds
+class ConfigurationExperiment():
+    time_start_stimulus = 10  # (s)
+    time_end_stimulus = 40  # (s)
+    time_experimental_trial = 50  # (s)
 
-ResponseTimeColumn = "interbout_interval"
-CorrectBoutColumn = "correct_bout"
+    coherence_list = [0, 25, 50, 100]  # (%)
+
+    ResponseTimeColumn = "interbout_interval"
+    CorrectBoutColumn = "correct_bout"
+
+    coherence_label = "Coh (%)"
+    all_fish_label = "all"
+    example_fish_list = ["205", "506", "201"]
 
 class StimulusParameterLabel(Enum):
     SEPARATOR = '_'
@@ -21,5 +28,5 @@ class StimulusParameterLabel(Enum):
 class Keyword(Enum):
     INPUT = 'Input'
     OUTPUT = 'Output'
-    RIGHT = 90
-    LEFT = -90
+    RIGHT = 90  # (deg)
+    LEFT = -90  # (deg)
