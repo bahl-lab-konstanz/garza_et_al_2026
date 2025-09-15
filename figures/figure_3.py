@@ -1,20 +1,15 @@
-import pathlib
-
 import pandas as pd
 import numpy as np
-from pathlib import Path
 
+from pathlib import Path
 from dotenv import dotenv_values
 
-from analysis.personal_dirs.Roberto.model.drift_diffusion.core.ddm_stable import DDMstable
-from analysis.personal_dirs.Roberto.model.utils.params import ParameterList, Parameter
-from analysis.personal_dirs.Roberto.plot.paper_behavior_model.behavioral_model_style import BehavioralModelStyle
-from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
-from analysis.personal_dirs.Roberto.utils.constants import StimulusParameterLabel, CorrectBoutColumn, \
-    ResponseTimeColumn, alphabet, Keyword
-from analysis.personal_dirs.Roberto.utils.palette import Palette
-from analysis.personal_dirs.Roberto.utils.service.statistics_service import StatisticsService
 from analysis.utils.figure_helper import Figure
+from rg_behavior_model.figures.style import BehavioralModelStyle
+from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
+from rg_behavior_model.service.statistics_service import StatisticsService
+from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
+from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment, StimulusParameterLabel
 
 # env
 env = dotenv_values()
@@ -22,57 +17,50 @@ path_dir = Path(env['PATH_DIR'])
 path_save = Path(env['PATH_SAVE'])
 
 # parameters plot
-plot_height = 1
-plot_height_small = plot_height / 2.5
-padding_plot = 0.5
-padding_vertical = plot_height_small
-i_plot_label = 1  # 6  # 0  #
-plot_label_list = alphabet
-color_neutral = "#bfbfbfff"
+style = BehavioralModelStyle(plot_label_i=1)
 
-style = BehavioralModelStyle()
 xpos_start = style.xpos_start
-ypos_start =style.ypos_start
+ypos_start = style.ypos_start
 xpos = xpos_start
 ypos = ypos_start
-padding = 1.5  # style.padding
-padding_short = 0.75  # style.padding
+
 plot_height = style.plot_height
+plot_height_small = plot_height / 2.5
 plot_width = style.plot_width
 plot_width_short = style.plot_width * 0.9
-letter_counter = 1
-style.add_palette("neutral", [Palette.color_neutral])
-palette = style.palette["default"]
-style.add_palette("fish_code", ["#73489C", "#753B51", "#103882", "#7F0C0C"])
 
-# single-fish analysis is necessary
-show_trajectory_decision_variable = False
-show_loss_reduction = False
-show_psychometric_curve = False
-show_coherence_vs_interbout_interval = False
-show_rt_distributions = False
+padding = style.padding
+padding_short = style.padding / 2
+padding_in_plot_vertical = plot_height_small
+padding_in_plot_horizontal = style.padding / 3
+
+plot_height_row = plot_height_small * 2 + padding_in_plot_vertical
+
+color_line = "gray"
+lw = 1
+
+# show plots
+show_loss_reduction = True
+show_psychometric_curve = True
+show_coherence_vs_interbout_interval = True
+show_rt_distributions = True
 show_individual_estimations = True
 show_distribution_parameters = True
 
 # configurations experiment
-analysed_parameter_list = [0, 25, 50, 100]
-time_start_stimulus = 0  # 10  # seconds
-time_end_stimulus = 30  # seconds
-time_experimental_trial = 30  # seconds
+analysed_parameter_list = ConfigurationExperiment.coherence_list
+time_start_stimulus = ConfigurationExperiment.time_start_stimulus
+time_end_stimulus = ConfigurationExperiment.time_end_stimulus
+time_experimental_trial = ConfigurationExperiment.time_experimental_trial
 analysed_parameter = StimulusParameterLabel.COHERENCE.value  # StimulusParameterLabel.PERIOD.value  #
-analysed_parameter_label = "Coh (%)"  # "period [s]"  #
+analysed_parameter_label = ConfigurationExperiment.coherence_label
 query_time = f'start_time > {time_start_stimulus} and end_time < {time_end_stimulus}'
 
 # configurations plots
 number_bins_hist = 15
 
 df_dict = {}
-all_label = "all"
-fish_0_label = "205"
-fish_1_label = "506"
-fish_2_label = "201"
-# fish_3_label = "504"
-fish_to_include_list = [fish_0_label, fish_1_label, fish_2_label]
+fish_to_include_list = ConfigurationExperiment.example_fish_list
 config_list = [{"label": "data", "line_dashes": None, "alpha": 0.5, "color": None},
                {"label": "fit", "line_dashes": (2, 4), "alpha": 1, "color": "k"}]
 for i_fish, fish in enumerate(fish_to_include_list):
@@ -85,12 +73,10 @@ for i_fish, fish in enumerate(fish_to_include_list):
 # Make a standard figure
 fig = Figure()
 
-plot_height_row = plot_height_small * 2 + padding_vertical
-
 if show_loss_reduction:
     ypos = ypos - padding_short
 
-    plot_loss = fig.create_plot(plot_label=alphabet[i_plot_label],
+    plot_loss = fig.create_plot(plot_label=style.get_plot_label(),
                                 xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width,
                                 ymin=0, ymax=20, yticks=[0, 10, 20],
                                 yl="Loss",
@@ -108,24 +94,17 @@ if show_loss_reduction:
             plot_loss.draw_scatter((1, 2), loss_array, ec=df_dict[fish_id]["color"], pc=df_dict[fish_id]["color"], label=f"fish {i_fish_id}")
     ypos = ypos - padding - plot_height
     xpos = xpos_start
-    i_plot_label += 1
 
 if show_psychometric_curve:
-    plot_height = plot_height_row
-    plot_width = 1
-    color_line = "gray"
-    lw = 1
     show_label = True
 
-    plot_0 = fig.create_plot(plot_label=plot_label_list[i_plot_label], xpos=xpos, ypos=ypos, plot_height=plot_height,
+    plot_0 = fig.create_plot(plot_label=style.get_plot_label(), xpos=xpos, ypos=ypos, plot_height=plot_height_row,
                              plot_width=plot_width,
                              xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list),
-                             # xl=analysed_parameter_label,
-                             xticks=None,  # xticks=[int(p) for p in parameter_list_all],
+                             xticks=None,
                              yl="Percentage\ncorrect swims (%)",
                              ymin=0, ymax=100,
                              yticks=[0, 50, 100], hlines=[0.5])
-    i_plot_label += 1
 
     i_fish = 1
     for k_fish, df_fish_dict in df_dict.items():
@@ -147,22 +126,14 @@ if show_psychometric_curve:
                                  textlabel_rotation='horizontal', textlabel_ha='left', textcolor=df_fish_dict["color"])
                 i_fish += 1
 
-    # ypos = ypos - padding - plot_height
-    # xpos = xpos_start
-    ypos = ypos
-    xpos = xpos + padding + plot_width
+    xpos = xpos_start
+    ypos = ypos - padding - plot_height
 
-xpos = xpos_start
-ypos = ypos - padding - plot_height
 if show_coherence_vs_interbout_interval:
-    plot_height = plot_height_row
-    plot_width = 1
-    color_line = "gray"
-    lw = 1
     show_label = True
 
     plot_0 = fig.create_plot(xpos=xpos, ypos=ypos,
-                             plot_height=plot_height,
+                             plot_height=plot_height_row,
                              plot_width=plot_width,
                              errorbar_area=True,
                              xl=analysed_parameter_label, xmin=min(analysed_parameter_list), xmax=max(analysed_parameter_list),
@@ -181,7 +152,7 @@ if show_coherence_vs_interbout_interval:
             # computation
             p_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters(df_filtered,
                                                                                                                       analysed_parameter=analysed_parameter,
-                                                                                                                      column_name=ResponseTimeColumn)
+                                                                                                                      column_name=ConfigurationExperiment.ResponseTimeColumn)
             p_list = np.array([int(p) for p in p_list])
 
             # plot
@@ -191,18 +162,14 @@ if show_coherence_vs_interbout_interval:
                                  textlabel_rotation='horizontal', textlabel_ha='left', textcolor=df_fish_dict["color"])
                 i_fish += 1
 
-    # ypos = ypos - padding - plot_height
-    # xpos = xpos_start
-    ypos = ypos
-    xpos = xpos + padding + plot_width
+    xpos = xpos_start
+    ypos = ypos - padding - plot_height * len(df_dict)
 
-xpos = xpos_start
-ypos = ypos - padding - plot_height * 2
 if show_rt_distributions:
     # parameters
     padding_here = plot_height_small * 2
     palette = style.palette["stimulus"]
-    x_limits = [0, 2]  # None  #
+    x_limits = [0, 2]
     y_limits = [0, 0.2]
 
     plot_height_here = plot_height_small * 3
@@ -210,7 +177,7 @@ if show_rt_distributions:
 
     plot_section = {"corr": {}, "err": {}}
 
-    df_dict.pop(all_label, None)  # get rid of the df with all data merged
+    df_dict.pop(ConfigurationExperiment.all_label, None)  # get rid of the df with all data merged
 
     for i_k, k in enumerate(df_dict.keys()):
         for i_param, parameter in enumerate(analysed_parameter_list):
@@ -222,10 +189,10 @@ if show_rt_distributions:
                     plot_title = f"Coh={parameter}%"
                 else:
                     plot_title = f"{parameter}%"
-            plot_section["corr"][i_param] = fig.create_plot(plot_label=plot_label_list[i_plot_label] if i_k == 0 and i_param == 0 else None,
+            plot_section["corr"][i_param] = fig.create_plot(plot_label=style.get_plot_label() if i_k == 0 and i_param == 0 else None,
                                                             plot_title=plot_title,
-                                                            xpos=xpos + i_param * (plot_width_here + padding_plot),
-                                                            ypos=ypos + plot_height_small + padding_vertical,
+                                                            xpos=xpos + i_param * (plot_width_here + padding_in_plot_horizontal),
+                                                            ypos=ypos + plot_height_small + padding_in_plot_vertical,
                                                             plot_height=plot_height_here,
                                                             plot_width=plot_width_here,
                                                             xmin=x_limits[0], xmax=x_limits[-1],
@@ -258,11 +225,10 @@ if show_rt_distributions:
                 )
 
                 # plot distribution of data over coherence levels
-                data_corr = df_filtered[df_filtered[CorrectBoutColumn] == 1][ResponseTimeColumn]
-                data_err = df_filtered[df_filtered[CorrectBoutColumn] == 0][ResponseTimeColumn]
+                data_corr = df_filtered[df_filtered[ConfigurationExperiment.CorrectBoutColumn] == 1][ConfigurationExperiment.ResponseTimeColumn]
+                data_err = df_filtered[df_filtered[ConfigurationExperiment.CorrectBoutColumn] == 0][ConfigurationExperiment.ResponseTimeColumn]
 
                 data_hist_value_corr, data_hist_time_corr = StatisticsService.get_hist(data_corr,
-                                                                                       # bins=100,
                                                                                        bins=np.arange(x_limits[0], x_limits[-1], (x_limits[-1]-x_limits[0])/50),
                                                                                        duration=duration,
                                                                                        center_bin=True)
@@ -271,7 +237,6 @@ if show_rt_distributions:
                 data_hist_value_corr = data_hist_value_corr[index_in_limits].flatten()
 
                 data_hist_value_err, data_hist_time_err = StatisticsService.get_hist(data_err,
-                                                                                     # bins=100,
                                                                                      bins=np.arange(x_limits[0], x_limits[-1], (x_limits[-1]-x_limits[0])/50),
                                                                                      duration=duration,
                                                                                      center_bin=True)
@@ -297,11 +262,9 @@ if show_rt_distributions:
                                             lw=0.75, line_dashes=config["line_dashes"], alpha=alpha_incorrect)
 
         ypos = ypos - (padding_here + plot_height_small)
-    i_plot_label += 1
-    plot_height = 1
+
+    xpos = xpos_start
     ypos = ypos
-    xpos = xpos + i_param * (plot_width_here + padding_plot) + plot_width_here + padding
-xpos = xpos_start
 
 if show_distribution_parameters:
     from_best_model = True
@@ -309,14 +272,11 @@ if show_distribution_parameters:
     plot_width_here = plot_width_short
     padding_here = style.padding
     palette = style.palette["default"]
+    number_resampling = 10000  # for bootstrapping
 
-    # path_noise_statistics = r"C:\Users\Roberto\Academics\data\benchmarking\weight_nosmooth_2coh\results\df_noise"
-    # noise_statistics = pd.read_hdf(path_noise_statistics)
-    number_resampling = 10000
-
-    distribution_trajectory_dict = {p["label"]: np.zeros(number_bins_hist) for p in parameter_list}
-    raw_data_dict_per_fish = {p["label"]: {} for p in parameter_list}
-    raw_data_dict = {p["label"]: [] for p in parameter_list}
+    distribution_trajectory_dict = {p["label"]: np.zeros(number_bins_hist) for p in ConfigurationDDM.parameter_list}
+    raw_data_dict_per_fish = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
+    raw_data_dict = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
     model_dict = {}
     n_models = 0
     for model_filepath in path_dir.glob('model_*_fit.hdf5'):
@@ -325,14 +285,13 @@ if show_distribution_parameters:
 
     fish_list = np.arange(len(model_dict.keys()))
 
-    model_parameter_median_dict = {p["label"]: {} for p in parameter_list}
-    model_parameter_dict = {p["label"]: {} for p in parameter_list}
+    model_parameter_median_dict = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
+    model_parameter_dict = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
     model_parameter_median_dict["score"] = {}
     model_parameter_dict["score"] = {}
-    model_parameter_median_array = np.zeros((len(parameter_list)+1, len(fish_list)))
+    model_parameter_median_array = np.zeros((len(ConfigurationDDM.parameter_list)+1, len(fish_list)))
     for i_model, id_model in enumerate(model_dict.keys()):
         df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
-        # id_fish = id_model[:2]
 
         id_fish = i_model
         if from_best_model:
@@ -343,7 +302,7 @@ if show_distribution_parameters:
         model_parameter_dict["score"][id_fish] = np.array(df_model_fit_list["score"])
         model_parameter_median_array[0, i_model] = np.median(df_model_fit_list["score"])
 
-        for i_p, p in enumerate(parameter_list):
+        for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             p_median = np.median(df_model_fit_list[p["label"]])
             model_parameter_median_dict[p["label"]][id_fish] = p_median  # (p_median - p["min"]) / (p["max"] - p["min"])
             model_parameter_dict[p["label"]][id_fish] = np.array(df_model_fit_list[p["label"]])  # (np.array(df_model_fit_list[p["label"]]) - p["min"]) / (p["max"] - p["min"])
@@ -361,18 +320,16 @@ if show_distribution_parameters:
         number_fish = model_parameter_median_array.shape[1]
         fish_id_array = np.flip(np.arange(number_fish))
 
-        for i_p, p in enumerate(parameter_list):
+        for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             vlines = [p["mean"]] if p["mean"] == 0 else []
             if p["relevant_values"] is not None:
                 vlines.extend(p["relevant_values"])
-            plot_individual = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None, xpos=xpos, ypos=ypos,
+            plot_individual = fig.create_plot(plot_label=style.get_plot_label() if i_p == 0 else None, xpos=xpos, ypos=ypos,
                                              plot_height=plot_height_here, plot_width=plot_width_here,
                                              yl="Fish ID" if i_p == 0 else None, ymin=0-0.5, ymax=number_fish-0.5, yticks=None,
                                              xmin=p["min"], xmax=p["max"], xticks=[p["min"], p["mean"], p["max"]],
                                              xl=p['label_show'].capitalize(),
                                              vlines=vlines)
-            if i_p == 0:
-                i_plot_label += 1
             xpos += plot_width_here + padding_short
 
             plot_individual.draw_scatter(model_parameter_median_array[i_p + 1, :], fish_id_array, pc=palette[i_p], elw=0)
@@ -384,15 +341,15 @@ if show_distribution_parameters:
 
     hist_model_parameter_median_dict = {}
     bin_model_parameter_median_dict = {}
-    hist_model_parameter_median_dict[score_config["label"]], bin_model_parameter_median_dict[score_config["label"]] = StatisticsService.get_hist(
-            model_parameter_median_array[0, :], center_bin=True,  hist_range=[score_config["min"], score_config["max"]],
-            bins=number_bins_hist,  # int((score_config["max"] - score_config["min"])/0.1),
+    hist_model_parameter_median_dict[ConfigurationDDM.score_config["label"]], bin_model_parameter_median_dict[ConfigurationDDM.score_config["label"]] = StatisticsService.get_hist(
+            model_parameter_median_array[0, :], center_bin=True,  hist_range=[ConfigurationDDM.score_config["min"], ConfigurationDDM.score_config["max"]],
+            bins=number_bins_hist,
             density=True
         )
-    for i_p, p in enumerate(parameter_list):
+    for i_p, p in enumerate(ConfigurationDDM.parameter_list):
         hist_model_parameter_median_dict[p["label"]], bin_model_parameter_median_dict[p["label"]] = StatisticsService.get_hist(
             model_parameter_median_array[i_p + 1, :], center_bin=True,  hist_range=[p["min"], p["max"]],
-            bins=number_bins_hist,  # int((p["max"]-p["min"])/0.1),
+            bins=number_bins_hist,
             density=True
         )
         distribution_trajectory_dict[p["label"]] = hist_model_parameter_median_dict[p["label"]]
@@ -404,9 +361,8 @@ if show_distribution_parameters:
             optimal_integration = hist_model_parameter_median_dict[p["label"]][11:16]
             print(f"LEAK | {np.sum(optimal_integration)*100}% is optimal")
 
-    # #####
-    for i_p, p in enumerate(parameter_list):
-        plot_n = fig.create_plot(plot_label=alphabet[i_plot_label] if i_p == 0 else None, xpos=xpos, ypos=ypos,
+    for i_p, p in enumerate(ConfigurationDDM.parameter_list):
+        plot_n = fig.create_plot(plot_label=style.get_plot_label() if i_p == 0 else None, xpos=xpos, ypos=ypos,
                                  plot_height=plot_height_here, plot_width=plot_width_here,
                                  yl="Percentage fish (%)" if i_p == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 else None,
                                  xmin=p["min"], xmax=p["max"], xticks=[p["min"], p["mean"], p["max"]], xl=p['label_show'].capitalize(),
@@ -414,14 +370,9 @@ if show_distribution_parameters:
 
         plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]] * 100,
                          lc=palette[i_p])
-        if i_p == 0:
-            i_plot_label += 1
         xpos = xpos + padding_short + plot_width_here
 
     xpos = xpos_start
     ypos = ypos - plot_height_here - padding_here
-    i_plot_label += 1
 
-
-# fig.save(Path.home() / 'Academics' / 'graphics' / 'pictures' / 'figures_for_papers' / 'behavior_model' / "figure_1_experiment_coh_temp.pdf", open_file=True, tight=True)
-fig.save(path_save / "figure_2.pdf", open_file=False, tight=style.page_tight)
+fig.save(path_save / "figure_3.pdf", open_file=False, tight=style.page_tight)

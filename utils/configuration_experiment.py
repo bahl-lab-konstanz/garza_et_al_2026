@@ -12,7 +12,7 @@ class ConfigurationExperiment():
 
     coherence_label = "Coh (%)"
     all_fish_label = "all"
-    example_fish_list = ["205", "506", "201"]
+    example_fish_list = ["001", "002", "003"]  # identifier of three example fish
 
 class StimulusParameterLabel(Enum):
     SEPARATOR = '_'

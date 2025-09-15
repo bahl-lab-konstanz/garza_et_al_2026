@@ -19,7 +19,7 @@ path_save = Path(env['PATH_SAVE'])
 path_data = path_dir / "base_dataset"
 
 # configuration plot
-style = BehavioralModelStyle()
+style = BehavioralModelStyle(plot_label_i=4)
 
 xpos_start = style.xpos_start
 ypos_start =style.ypos_start
@@ -156,9 +156,9 @@ if show_distribution_change_angles:
                              vspans=[[min_angle, -threshold_side, style.palette["correct_incorrect"][1], 1],
                                      [threshold_side, max_angle, style.palette["correct_incorrect"][0], 1]])
 
-    query_time = f"start_time > {ConfigurationExperiment.time_start_stimulus} and end_time < {ConfigurationExperiment.time_end_stimulus} " \
+    query_time_angle = f"start_time > {ConfigurationExperiment.time_start_stimulus} and end_time < {ConfigurationExperiment.time_end_stimulus} " \
                  f"and estimated_orientation_change < {max_angle} and estimated_orientation_change > {min_angle}"  # slice over time and angle
-    df_filtered = df.query(query_time)
+    df_filtered = df.query(query_time_angle)
     legends = []
     for i_coherence, coherence in enumerate(ConfigurationExperiment.coherence_list):
         coherence_condition_is_met = list(df_filtered[StimulusParameterLabel.COHERENCE.value] == coherence)
