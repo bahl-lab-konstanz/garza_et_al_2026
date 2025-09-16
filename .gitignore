@@ -165,6 +165,3 @@ dmypy.json
 *.mat
 *.mlx
 *.s2rx
-
-# Data
-/data
