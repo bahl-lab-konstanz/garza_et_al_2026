@@ -14,6 +14,7 @@ from rg_behavior_model.utils.configuration_experiment import ConfigurationExperi
 # env
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
+path_data = path_dir / "base_dataset"
 path_save = Path(env['PATH_SAVE'])
 
 # parameters plot
@@ -27,7 +28,7 @@ ypos = ypos_start
 plot_height = style.plot_height
 plot_height_small = plot_height / 2.5
 plot_width = style.plot_width
-plot_width_short = style.plot_width * 0.9
+plot_width_small = style.plot_width_small
 
 padding = style.padding
 padding_short = style.padding / 2
@@ -64,8 +65,8 @@ fish_to_include_list = ConfigurationExperiment.example_fish_list
 config_list = [{"label": "data", "line_dashes": None, "alpha": 0.5, "color": None},
                {"label": "fit", "line_dashes": (2, 4), "alpha": 1, "color": "k"}]
 for i_fish, fish in enumerate(fish_to_include_list):
-    df_data = pd.read_hdf(path_dir / f"data_fish_{fish}.hdf5")
-    for path_fit in path_dir.glob(f"data_synthetic_fish_{fish}_*.hdf5"):
+    df_data = pd.read_hdf(path_data / f"data_fish_{fish}.hdf5")
+    for path_fit in path_data.glob(f"data_synthetic_fish_{fish}_*.hdf5"):
         df_fit = pd.read_hdf(path_fit)
         break
     df_dict[fish] = {"fit": df_fit, "data": df_data, "color": style.palette["fish_code"][i_fish]}  # BehavioralProcessing.remove_fast_straight_bout(df, threshold_response_time=100)
@@ -84,7 +85,7 @@ if show_loss_reduction:
                                 xticklabels=["0", "1500"])
     for i_fish_id, fish_id in enumerate(fish_to_include_list):
         loss_array = np.zeros(2)
-        for path_error in path_dir.glob(f"error_fish_{fish_id}_*.hdf5"):
+        for path_error in path_data.glob(f"error_fish_{fish_id}_*.hdf5"):
             df_error = pd.read_hdf(path_error)
             loss_array[0] = df_error["score"][0]
 
@@ -269,7 +270,7 @@ if show_rt_distributions:
 if show_distribution_parameters:
     from_best_model = True
     plot_height_here = style.plot_height
-    plot_width_here = plot_width_short
+    plot_width_here = plot_width_small
     padding_here = style.padding
     palette = style.palette["default"]
     number_resampling = 10000  # for bootstrapping
@@ -279,7 +280,7 @@ if show_distribution_parameters:
     raw_data_dict = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
     model_dict = {}
     n_models = 0
-    for model_filepath in path_dir.glob('model_*_fit.hdf5'):
+    for model_filepath in path_data.glob('model_*_fit.hdf5'):
         model_filename = str(model_filepath.name)
         model_dict[model_filename.split("_")[2]] = {"fit": model_filepath}
 

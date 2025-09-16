@@ -59,6 +59,7 @@ fish_to_include_list = ConfigurationExperiment.example_fish_list
 for fish in fish_to_include_list:
     df = pd.read_hdf(path_data / f"data_fish_{fish}.hdf5")
     df_dict[fish] = df  # BehavioralProcessing.remove_fast_straight_bout(df, threshold_response_time=100)
+df_dict[all_label] = pd.read_hdf(path_data / f"data_fish_{all_label}.hdf5")
 
 # Make a standard figure
 fig = Figure()
@@ -84,12 +85,11 @@ if show_trial_structure:
     plot_height_here = plot_height * 0.2
     padding_vert_here = plot_height * 0.05
     plot_width_here = plot_width * 2
-    ypos_here = ypos + 0.5
+    ypos_here = ypos
 
     number_plots = 0
     height_drift = 0
     for i_ex, ex in enumerate(experiment_list):
-
         for i_param, parameter in enumerate(ex["analysed_parameter_list"]):
             plot_section = fig.create_plot(plot_label=style.get_plot_label() if i_param == 0 else None,
                                            xpos=xpos, ypos=ypos_here - (padding_vert_here + plot_height_here) * number_plots - height_drift,
@@ -99,6 +99,7 @@ if show_trial_structure:
                                            ymin=-0.1, ymax=1.1,
                                            legend_xpos=xpos + plot_width_here,
                                            legend_ypos=ypos_here + 0.3 - (padding_vert_here + plot_height_here) * number_plots - height_drift)
+            number_plots += 1
 
             df_filtered = df_sample[df_sample[coherence_label] == parameter]
             df_filtered = df_filtered[df_filtered["dir"] == 90].xs(ex["trial_number"], level="trial")
@@ -120,6 +121,7 @@ if show_trial_structure:
                                            plot_width=plot_width_here,
                                            xmin=0, xmax=ConfigurationExperiment.time_experimental_trial,
                                            ymin=0, ymax=1)
+            number_plots += 1
 
             def color_timestamp(timestamp):
                 if timestamp < time_stimulus[0] or timestamp > time_stimulus[-1]:
@@ -131,8 +133,8 @@ if show_trial_structure:
 
         height_drift += 0.2
 
-    ypos = ypos
-    xpos = xpos + 2 * plot_width_here + padding
+    xpos = xpos
+    ypos = ypos_here - (padding_vert_here + plot_height_here) * number_plots - height_drift - padding
 
 if show_distribution_change_angles:
     # parameters

@@ -26,9 +26,12 @@ class BehavioralModelStyle(Style):
     plot_size = 1
 
     padding = 1.5
+    padding_small = 0.75
     padding_in_plot = 0.5
+    padding_in_plot_small = 0.05
 
     plot_height = 1
+    plot_height_small = 0.25
 
     plot_width = 1
     plot_width_large = 3
@@ -45,6 +48,6 @@ class BehavioralModelStyle(Style):
         self.palette[label] = copy.deepcopy(palette)
 
     def get_plot_label(self):
-        label_to_show = self.plot_label_list[plot_label_i]
+        label_to_show = self.plot_label_list[self.plot_label_i]
         self.plot_label_i += 1
         return label_to_show
