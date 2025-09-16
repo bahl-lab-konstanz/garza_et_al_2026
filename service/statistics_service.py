@@ -9,6 +9,8 @@ from analysis.personal_dirs.Roberto.utils.fast_functions import numba_histogram
 
 
 class StatisticsService:
+    number_resampling_bootstrapping = 10000
+    threshold_p_value_significant = 0.01
 
     # return the element of an array lst which is the closest to the value K
     @staticmethod

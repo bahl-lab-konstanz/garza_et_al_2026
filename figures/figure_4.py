@@ -151,10 +151,10 @@ if show_psychometric_curve:
         # draw
         plot_0.draw_line(x=parameter_list_data, y=correct_bout_list_data*100,
                          errorbar_area=True, yerr=np.array(std_correct_bout_list_data)*100,  # / np.sqrt(number_individuals),
-                         lc=m["color"], lw=1, alpha=m["alpha"])
+                         lc="k", lw=1)
         plot_0.draw_line(x=parameter_list_sim, y=correct_bout_list_sim*100,
                          errorbar_area=True, yerr=np.array(std_correct_bout_list_sim)*100,  # / np.sqrt(number_models),
-                         lc=m["color"], lw=1, alpha=m["alpha"], line_dashes=(1, 2))
+                         lc="k", lw=1, line_dashes=(1, 2))
 
         if i_m == len(models_in_age_list) - 1:
             pad = padding
@@ -170,12 +170,15 @@ if show_coherence_vs_interbout_interval:
         df_data = m["df_data"]
         df_data_filtered = df_data.query(query_time)
         df_data_filtered = df_data_filtered[df_data_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+
         original_len = len(df_data_filtered)
         df_data_filtered = df_data_filtered[df_data_filtered[ConfigurationExperiment.CorrectBoutColumn] != -1]
         filtered_len = len(df_data_filtered)
-        print(f"EXCLUDE STRAIGHT BOUT | {(original_len - filtered_len)/original_len*100:.03f}% dropped")
+        print(f"EXCLUDE STRAIGHT BOUT |at {m['label_show']} {(original_len - filtered_len)/original_len*100:.03f}% dropped")
+
         ibi_quantiles = np.quantile(df_data_filtered[ConfigurationExperiment.ResponseTimeColumn], [0.05, 0.95])
-        df_data_filtered = df_data_filtered[np.logical_and(df_data_filtered[ConfigurationExperiment.ResponseTimeColumn] > ibi_quantiles[0], df_data_filtered[ConfigurationExperiment.ResponseTimeColumn] < ibi_quantiles[1])]
+        df_data_filtered = df_data_filtered[np.logical_and(df_data_filtered[ConfigurationExperiment.ResponseTimeColumn] > ibi_quantiles[0],
+                                                           df_data_filtered[ConfigurationExperiment.ResponseTimeColumn] < ibi_quantiles[1])]
         try:
             df_data_filtered["experiment_ID"] = df_data_filtered["fish_ID"]
             df_data_filtered.drop("fish_ID", inplace=True)
@@ -191,10 +194,11 @@ if show_coherence_vs_interbout_interval:
         df_simulation = m["df_simulation"]
         df_simulation_filtered = df_simulation.query(query_time)
         df_simulation_filtered = df_simulation_filtered[df_simulation_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+
         number_models = len(df_simulation_filtered["fish_ID"].unique())
+
         parameter_list_sim, interbout_interval_list_sim, std_interbout_interval_list_sim = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
                 df_simulation_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE, column_name=ConfigurationExperiment.ResponseTimeColumn)
-
         parameter_list_data = np.array([int(p) for p in parameter_list_data])
         parameter_list_sim = np.array([int(p) for p in parameter_list_sim])
 
@@ -212,10 +216,10 @@ if show_coherence_vs_interbout_interval:
         # draw
         plot_0.draw_line(x=parameter_list_data, y=interbout_interval_list_data,
                          errorbar_area=True, yerr=np.array(std_interbout_interval_list_data),  # / np.sqrt(number_individuals),
-                         lc=m["color"], lw=1, alpha=m["alpha"], label=f"data" if i_m == 0 else None)
+                         lc="k", lw=1, label=f"data" if i_m == 0 else None)
         plot_0.draw_line(x=parameter_list_sim, y=interbout_interval_list_sim,
                          errorbar_area=True, yerr=np.array(std_interbout_interval_list_sim),  # / np.sqrt(number_models),
-                         lc=m["color"], lw=1, alpha=m["alpha"], line_dashes=(1, 2), label=f"simulation" if i_m == 0 else None)
+                         lc="k", lw=1, line_dashes=(1, 2), label=f"simulation" if i_m == 0 else None)
 
         if i_m == len(models_in_age_list) - 1:
             pad = padding
@@ -227,19 +231,24 @@ if show_coherence_vs_interbout_interval:
     ypos = ypos - padding - plot_height
 
 if show_distribution_parameters:
-    from_best_model = True
+    # configuration plot
     plot_height_here = style.plot_height_small
     padding_here = style.padding_in_plot_small
-    number_resampling = 10000  # for bootstrapping
 
+    from_best_model = True
+
+    number_resampling_bootstrapping = StatisticsService.number_resampling_bootstrapping
+    threshold_p_value_significant = StatisticsService.threshold_p_value_significant
+
+    # initialization data structures to store results
     distribution_trajectory_dict = {p["label"]: np.zeros((number_bins_hist, len(models_in_age_list))) for p in ConfigurationDDM.parameter_list}
     raw_data_dict_per_fish = {p["label"]: {i_age: {} for i_age in range(len(models_in_age_list))} for p in ConfigurationDDM.parameter_list}
     raw_data_dict = {p["label"]: {i_age: [] for i_age in range(len(models_in_age_list))} for p in ConfigurationDDM.parameter_list}
     median_groups = {p["label"]: np.zeros(len(models_in_age_list)) for p in ConfigurationDDM.parameter_list}
     quantiles_groups = {p["label"]: np.zeros((len(models_in_age_list), 3)) for p in ConfigurationDDM.parameter_list}
+    # compute
     for i_age, models_in_age in enumerate(models_in_age_list):
         model_dict = {}
-        n_models = 0
         path_dir = Path(models_in_age["path"])
         for model_filepath in path_dir.glob('model_*_fit.hdf5'):
             model_filename = str(model_filepath.name)
@@ -281,7 +290,7 @@ if show_distribution_parameters:
             median_groups[p["label"]][i_age] = np.median(raw_data_dict[p["label"]][i_age])
 
             model_parameter_sampling_list = StatisticsService.sample_random(
-                array=model_parameter_median_array[i_p + 1, :], sample_number=number_resampling,
+                array=model_parameter_median_array[i_p + 1, :], sample_number=number_resampling_bootstrapping,
                 sample_percentage_size=1, with_replacement=True, add_noise=None)
 
             median_list = np.array([np.median(m) for m in model_parameter_sampling_list])
@@ -303,11 +312,12 @@ if show_distribution_parameters:
             )
             distribution_trajectory_dict[p["label"]][:, i_age] = hist_model_parameter_median_dict[p["label"]]
 
+    # plot distribution parameters estimations in each age population
     for i_age in range(len(models_in_age_list)):
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             plot_n = fig.create_plot(plot_label=style.get_plot_label() if i_p == 0 and i_age == 0 else None, xpos=xpos, ypos=ypos,
                                      plot_height=plot_height_here, plot_width=plot_width,
-                                     yl="percentage fish [%]" if i_p == 0 and i_age == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 and i_age == 0 else None,
+                                     yl="Percentage fish (%)" if i_p == 0 and i_age == 0 else None, ymin=0, ymax=50, yticks=[0, 50] if i_p == 0 and i_age == 0 else None,
                                      xmin=p["min"], xmax=p["max"],
                                      vlines=[p["mean"]] if p["mean"] == 0 else [])
 
@@ -322,7 +332,7 @@ if show_distribution_parameters:
     xpos = xpos_start
     ypos = ypos - (padding-padding_here)
 
-    # BOOTSTRAP TEST PLOT
+    # plot highlighting populations with significantly different parameter estimations
     plot_list = []
     for i_p, p in enumerate(ConfigurationDDM.parameter_list):
         plot_n = fig.create_plot(plot_label=style.get_plot_label() if i_p==0 else None, xpos=xpos, ypos=ypos,
@@ -350,10 +360,10 @@ if show_distribution_parameters:
             combined_array = np.concatenate((np.array(raw_data_dict[p["label"]][pairs_to_compare[0]]),
                                              np.array(raw_data_dict[p["label"]][pairs_to_compare[1]])))
             model_parameter_sampling_control_0 = StatisticsService.sample_random(
-                array=combined_array, sample_number=number_resampling,
+                array=combined_array, sample_number=number_resampling_bootstrapping,
                 sample_percentage_size=1, with_replacement=True, add_noise=None)
             model_parameter_sampling_control_1 = StatisticsService.sample_random(
-                array=combined_array, sample_number=number_resampling,
+                array=combined_array, sample_number=number_resampling_bootstrapping,
                 sample_percentage_size=1, with_replacement=True, add_noise=None)
 
             median_control_0 = np.array([np.median(m) for m in model_parameter_sampling_control_0])
@@ -364,7 +374,7 @@ if show_distribution_parameters:
             print(f"{models_in_age_list[pairs_to_compare[0]]['label_show']} vs {models_in_age_list[pairs_to_compare[1]]['label_show']} | p = {p_value}")
 
             plot_n = plot_list[i_p]
-            if p_value < 0.01:
+            if p_value < threshold_p_value_significant:
                 is_sig = True
                 x_sig_array = np.ones(2) * x_sig
                 y_sig_array = np.array(
