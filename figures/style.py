@@ -22,8 +22,10 @@ class BehavioralModelStyle(Style):
     font_size_label = 8
     font_size_text = 6
     linewidth = 1
+    linewidth_single_fish = 0.05
 
     plot_size = 1
+    plot_size_small = 0.5
 
     padding = 1.5
     padding_small = 0.75

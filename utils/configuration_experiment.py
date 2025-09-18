@@ -10,7 +10,7 @@ class ConfigurationExperiment():
     ResponseTimeColumn = "interbout_interval"
     CorrectBoutColumn = "correct_bout"
 
-    coherence_label = "Coh (%)"
+    coherence_label = "Coherence (%)"
     all_fish_label = "all"
     example_fish_list = ["001", "002", "003"]  # identifier of three example fish
 
