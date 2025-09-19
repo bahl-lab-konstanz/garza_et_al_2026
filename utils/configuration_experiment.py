@@ -13,20 +13,3 @@ class ConfigurationExperiment():
     coherence_label = "Coherence (%)"
     all_fish_label = "all"
     example_fish_list = ["001", "002", "003"]  # identifier of three example fish
-
-class StimulusParameterLabel(Enum):
-    SEPARATOR = '_'
-
-    DIRECTION = "dir"
-    COHERENCE = "coh"
-    DENSITY = "den"
-    SPEED = "speed"
-    LIFETIME = "lifetime"
-    BRIGHTNESS = "brig"
-    SIZE = "size"
-
-class Keyword(Enum):
-    INPUT = 'Input'
-    OUTPUT = 'Output'
-    RIGHT = 90  # (deg)
-    LEFT = -90  # (deg)

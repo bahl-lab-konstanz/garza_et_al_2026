@@ -43,8 +43,8 @@ from rg_behavior_model.model.ddm import DDMstable
 from rg_behavior_model.service.fast_functions import count_entries_in_dict
 from rg_behavior_model.service.model_service import ModelService
 from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment, StimulusParameterLabel
-from rg_behavior_model.utils.constants import Direction
+from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
+from rg_behavior_model.utils.constants import Direction, StimulusParameterLabel
 from analysis.utils.figure_helper import Figure
 
 

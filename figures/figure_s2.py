@@ -30,7 +30,8 @@ from analysis.utils.figure_helper import Figure
 from rg_behavior_model.figures.style import BehavioralModelStyle
 from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
 from rg_behavior_model.service.statistics_service import StatisticsService
-from rg_behavior_model.utils.configuration_experiment import StimulusParameterLabel, ConfigurationExperiment
+from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
+from rg_behavior_model.utils.constants import StimulusParameterLabel
 
 # ==============================
 # Environment and data paths

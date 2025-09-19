@@ -31,8 +31,8 @@ from rg_behavior_model.figures.style import BehavioralModelStyle
 from rg_behavior_model.model.core.params import Parameter, ParameterList
 from rg_behavior_model.model.ddm import DDMstable
 from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import StimulusParameterLabel, ConfigurationExperiment
-
+from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
+from rg_behavior_model.utils.constants import StimulusParameterLabel
 
 # ================================================================
 # Environment and paths
