@@ -89,3 +89,15 @@ def _solve_be_constant(F_actual, f, duration_input_signal, dt, inactive_time):
 @nb.njit
 def safe_arange(start, stop, step):
     return step * np.arange(start / step, stop / step)
+
+
+# count elements in a dictionary with arbitrary number of nested levels
+def count_entries_in_dict(my_dict, c=0):
+    for my_key in my_dict:
+        if isinstance(my_dict[my_key], dict):
+            c = count_entries_in_dict(my_dict[my_key], c)
+        elif isinstance(my_dict[my_key], np.ndarray) or isinstance(my_dict[my_key], list):
+            c += len(my_dict[my_key])
+        else:
+            c += 1
+    return c

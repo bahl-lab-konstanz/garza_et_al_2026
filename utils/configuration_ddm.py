@@ -43,6 +43,8 @@ class ConfigurationDDM():
          "relevant_values": None},
     ]
 
-    dt = 0.01
+    dt = 0.01  # (s)
     threshold = 1
+    number_trial_per_model_coh = 30
     number_bootstrap_resampling = 10000
+    mean_angle_bout = 50  # (degree)
