@@ -2,6 +2,15 @@
 Implementation of the analysis and results shown in _Garza et al 2025_.
 
 
+### Project organization
+Here is an overview to navigate the project
+- `figures`: contains all scripts generating raw versions of the figures in the manuscript
+- `analysis`: contains additional analysis mentioned in the main or extended version of the manuscript
+- `model`: contains the implementation of the model, together with a lightweight version of a modeling framework under development in the Bahl Lab
+- `utils` and `service`: contain useful constants and functions, used to run analysis and compute core quantities appearing in the figures
+- `data`: empty directory, please put here the data once you downloaded them (see paragraph _Data_)
+- `results`: empty directory where output figures will be stored 
+
 ### Environment variables
 In order for all the figure-generating scripts to get access to the right path and data, you will need to create a file 
 named `.env` in the same directory as this README file.
@@ -11,3 +20,12 @@ PATH_DIR=<path_local>/data
 PATH_SAVE=<path_local>/results
 ```
 Then substitute `<path_local>` with the actual path to the directory where the `data` folder is located.
+
+
+### Data
+Please download the datasets from [here]() and populate your `data` directory inside the project. Keep the organization of the 
+directory unchanged to have the project tree organized consistently to the paths called in the scripts.
+
+
+### Dependencies
+For the figure scripts to run, you need the `figure_helper` library, which is now only available [here](). 
