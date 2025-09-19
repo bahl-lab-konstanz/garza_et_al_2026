@@ -36,7 +36,7 @@ from rg_behavior_model.utils.constants import StimulusParameterLabel
 # =============================================================================
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
-path_data = path_dir / "mutation_analysis"
+path_data = path_dir / "harpaz_2021"
 path_save = Path(env['PATH_SAVE'])
 
 # =============================================================================
