@@ -201,7 +201,7 @@ if show_psychometric_curve:
         df_data = m["df_data"]
         # apply the time window filter and keep only relevant coherence values
         df_data_filtered = df_data.query(query_time)
-        df_data_filtered = df_data_filtered[df_data_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+        df_data_filtered = df_data_filtered[df_data_filtered[StimulusParameterLabel.COHERENCE.value].isin(ConfigurationExperiment.coherence_list)]
         # Some datasets store the subject id under 'fish_ID' — unify to 'experiment_ID'
         try:
             df_data_filtered["experiment_ID"] = df_data_filtered["fish_ID"]
@@ -212,7 +212,7 @@ if show_psychometric_curve:
 
         # Compute mean % correct across fish for each coherence (returns means and std)
         parameter_list_data, correct_bout_list_data, std_correct_bout_list_data = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
-            df_data_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE)
+            df_data_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE.value)
         # number of individuals (for reference / potential normalization)
         try:
             number_individuals = len(df_data_filtered.index.unique("experiment_ID"))
@@ -222,9 +222,9 @@ if show_psychometric_curve:
         # Load & prepare simulation (model) outputs for this mutation group
         df_simulation = m["df_simulation"]
         df_simulation_filtered = df_simulation.query(query_time)
-        df_simulation_filtered = df_simulation_filtered[df_simulation_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+        df_simulation_filtered = df_simulation_filtered[df_simulation_filtered[StimulusParameterLabel.COHERENCE.value].isin(ConfigurationExperiment.coherence_list)]
         number_models = len(df_simulation_filtered["fish_ID"].unique())
-        parameter_list_sim, correct_bout_list_sim, std_correct_bout_list_sim = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(df_simulation_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE)
+        parameter_list_sim, correct_bout_list_sim, std_correct_bout_list_sim = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(df_simulation_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE.value)
 
         # Ensure coherence lists are integer arrays for plotting
         parameter_list_data = np.array([int(p) for p in parameter_list_data])
@@ -268,7 +268,7 @@ if show_coherence_vs_interbout_interval:
         df_data = m["df_data"]
         # time window + coherence filter
         df_data_filtered = df_data.query(query_time)
-        df_data_filtered = df_data_filtered[df_data_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+        df_data_filtered = df_data_filtered[df_data_filtered[StimulusParameterLabel.COHERENCE.value].isin(ConfigurationExperiment.coherence_list)]
 
         # Report fraction of trials removed when excluding bouts flagged as straight (CorrectBoutColumn == -1)
         original_len = len(df_data_filtered)
@@ -289,7 +289,7 @@ if show_coherence_vs_interbout_interval:
 
         # Compute per-coherence statistics (mean IBI and std across fish)
         parameter_list_data, interbout_interval_list_data, std_interbout_interval_list_data = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
-            df_data_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE, column_name=ConfigurationExperiment.ResponseTimeColumn)
+            df_data_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE.value, column_name=ConfigurationExperiment.ResponseTimeColumn)
         try:
             number_individuals = len(df_data_filtered.index.unique("experiment_ID"))
         except KeyError:
@@ -298,12 +298,12 @@ if show_coherence_vs_interbout_interval:
         # Prepare simulation dataset (model) for the same analysis
         df_simulation = m["df_simulation"]
         df_simulation_filtered = df_simulation.query(query_time)
-        df_simulation_filtered = df_simulation_filtered[df_simulation_filtered[StimulusParameterLabel.COHERENCE].isin(ConfigurationExperiment.coherence_list)]
+        df_simulation_filtered = df_simulation_filtered[df_simulation_filtered[StimulusParameterLabel.COHERENCE.value].isin(ConfigurationExperiment.coherence_list)]
 
         number_models = len(df_simulation_filtered["fish_ID"].unique())
 
         parameter_list_sim, interbout_interval_list_sim, std_interbout_interval_list_sim = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
-                df_simulation_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE, column_name=ConfigurationExperiment.ResponseTimeColumn)
+                df_simulation_filtered, analysed_parameter=StimulusParameterLabel.COHERENCE.value, column_name=ConfigurationExperiment.ResponseTimeColumn)
         parameter_list_data = np.array([int(p) for p in parameter_list_data])
         parameter_list_sim = np.array([int(p) for p in parameter_list_sim])
 
