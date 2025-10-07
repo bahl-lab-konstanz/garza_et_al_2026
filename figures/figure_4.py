@@ -433,7 +433,11 @@ if show_distribution_parameters:
             # Collect histogram values across ages (columns = age groups)
             distribution_trajectory_dict[p["label"]][:, i_age] = hist_model_parameter_median_dict[p["label"]]
 
-    models_in_age["reset_list"] = reset_list
+        models_in_age_list[i_age]["reset_list"] = reset_list
+
+    print("RESET | quantiles [40th, 50th, 60th, 80th]")
+    for m_age in models_in_age_list:
+        print(f"AGE: {m_age['label_show']} | reset: {np.quantile(m_age['reset_list'], [0.4, 0.5, 0.6, 0.8])}")
 
     # =============================================================================
     # Plot D1 — Histogram panels for each parameter x age group (small panels grid)
