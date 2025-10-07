@@ -450,7 +450,7 @@ if show_distribution_parameters:
             # Draw the histogram line for this age & parameter.
             # Visual attributes (dashes/alpha) taken from models_in_age_list entries if provided there.
             plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]][:, i_age] * 100,
-                             line_dashes=models_in_age_list[i_age]["dashes"], lc=palette[i_p], alpha=models_in_age_list[i_age]["alpha"], label=models_in_age_list[i_age]["label_show"] if i_p == len(ConfigurationDDM.parameter_list)-1 else None)
+                             lc=palette[i_p], label=models_in_age_list[i_age]["label_show"] if i_p == len(ConfigurationDDM.parameter_list)-1 else None)
 
             xpos = xpos + padding_small + plot_width
 

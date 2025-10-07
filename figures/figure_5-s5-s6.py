@@ -460,7 +460,7 @@ if show_distribution_parameters:
             # Draw the histogram line for this mutation & parameter.
             # Visual attributes (dashes/alpha) taken from models_in_mutation_list entries if provided there.
             plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]][:, i_mutation] * 100,
-                             line_dashes=models_in_mutation_list[i_mutation]["dashes"], lc=palette[i_p], alpha=models_in_mutation_list[i_mutation]["alpha"], label=models_in_mutation_list[i_mutation]["label_show"] if i_p == len(ConfigurationDDM.parameter_list)-1 else None)
+                             lc=palette[i_p], label=models_in_mutation_list[i_mutation]["label_show"] if i_p == len(ConfigurationDDM.parameter_list)-1 else None)
 
             xpos = xpos + padding_small + plot_width
 
