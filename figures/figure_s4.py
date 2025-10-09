@@ -70,26 +70,33 @@ df_data_sample = pd.read_hdf(path_data_sample)
 
 # Groups of models with different levels of synthetic noise added to IBIs
 models_in_group_list = [
-    {"label_show": r"$\Sigma_{noise}$=0",
+    {"label_show": r"$\sigma_{noise}^2$=0",
      "path": fr"{path_data}/0",
+     "noise_scale": 0,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.001",
+    {"label_show": r"$\sigma_{noise}^2$=$10^{-6}$",
      "path": fr"{path_data}/0_001",
+     "noise_scale": 0.001,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.0025",
+    {"label_show": r"$\sigma_{noise}^2$=6.25 $10^{-6}$",
      "path": fr"{path_data}/0_0025",
+     "noise_scale": 0.0025,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.005",
+    {"label_show": r"$\sigma_{noise}^2$=2.5 $10^{-5}$",
      "path": fr"{path_data}/0_005",
+     "noise_scale": 0.005,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.01",
+    {"label_show": r"$\sigma_{noise}^2$=$10^{-4}$",
      "path": fr"{path_data}/0_01",
+     "noise_scale": 0.01,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.05",
+    {"label_show": r"$\sigma_{noise}^2$=2.5 $10^{-3}$",
      "path": fr"{path_data}/0_05",
+     "noise_scale": 0.05,
      "loss_list": [],},
-    {"label_show": r"$\Sigma_{noise}$=0.1",
+    {"label_show": r"$\sigma_{noise}^2$=$10^{-2}$",
      "path": fr"{path_data}/0_1",
+     "noise_scale": 0.1,
      "loss_list": [],},
 ]
 
@@ -117,7 +124,7 @@ distribution_fit_dict = {data['label_show']: {p["label"]: {"loc": [], "scale": [
 # Main loop over model groups (different noise levels)
 # -----------------------------------------------------------------------------
 for i_group, models_in_group in enumerate(models_in_group_list):
-    noise_scale = float(models_in_group["label_show"].split("=")[-1])
+    noise_scale = float(models_in_group["noise_scale"])
 
     # -------------------------------------------------------------------------
     # Section 1: Plot example IBI distributions for one coherence level
@@ -430,11 +437,17 @@ if show_loss_real:
         {"label_show": "9dpf",
          "path": fr"{path_dir}\age_analysis\9_dpf",
          "loss_list": []},
-        {"label_show": "scn1lab +/+",
+        {"label_show": "scn1lab +/+ NIBR",
          "path": fr"{path_dir}\harpaz_2021\scn1lab_NIBR_20200708\wt",
          "loss_list": []},
-        {"label_show": "scn1lab +/-",
+        {"label_show": "scn1lab +/- NIBR",
          "path": fr"{path_dir}\harpaz_2021\scn1lab_NIBR_20200708\het",
+         "loss_list": []},
+        {"label_show": "scn1lab +/+ zirc",
+         "path": fr"{path_dir}\harpaz_2021\scn1lab_zirc_20200710\wt",
+         "loss_list": []},
+        {"label_show": "scn1lab +/- zirc",
+         "path": fr"{path_dir}\harpaz_2021\scn1lab_zirc_20200710\het",
          "loss_list": []},
         {"label_show": "disc +/+",
          "path": fr"{path_dir}\harpaz_2021\disc1_hetnix\wt",
@@ -455,7 +468,7 @@ if show_loss_real:
     x_tick_labels = [m["label_show"] for m in models_in_group_list] + [m["label_show"] for m in models_real_in_group_list]
     plot_loss = fig.create_plot(plot_label=style.get_plot_label(),
                                 xpos=xpos, ypos=ypos,
-                                plot_height=plot_height * 4, plot_width=plot_width * 8,
+                                plot_height=plot_height * 4, plot_width=plot_width * 10,
                                 ymin=0, ymax=3, errorbar_area=False,
                                 yticks=[0, 0.5, 1, 1.5, 2, 2.5, 3], yl="Loss at\niteration 1500",
                                 xl=None, xmin=-0.5, xmax=len(x_ticks) - 0.5,

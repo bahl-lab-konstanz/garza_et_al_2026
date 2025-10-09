@@ -71,7 +71,7 @@ number_bins_hist = 15  # number of bins for histograms
 # ================================================================
 # Flags: toggle which plots are generated
 # ================================================================
-show_trajectory_decision_variable = True
+show_trajectory_decision_variable = False
 show_repeatability = True
 
 
@@ -215,9 +215,9 @@ if show_trajectory_decision_variable:
 # ================================================================
 if show_repeatability:
     # Configuration for repeatability analysis
-    path_dir_repeat = Path(fr"{path_dir}\test_repeatability")
+    path_dir_repeat = Path(fr"{path_dir}\benchmark\test_repeatability")
     test_id = "006"
-    plot_width_here = style.plot_width_small
+    plot_width_here = 0.7  # style.plot_width_small
     padding_here = style.padding_small
     palette_here = style.palette["default"]
 

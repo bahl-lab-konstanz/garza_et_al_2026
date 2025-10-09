@@ -28,6 +28,7 @@ from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
 from rg_behavior_model.service.statistics_service import StatisticsService
 from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
 from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
+from rg_behavior_model.utils.constants import StimulusParameterLabel
 
 # =====================================================================
 # Load environment variables to locate data and output directories
@@ -411,9 +412,9 @@ if show_individual_estimations or show_distribution_parameters:
 
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             # Determine vertical lines to mark mean or relevant values
-            vlines = [p["mean"]] if p["mean"] == 0 else []
-            if p["relevant_values"] is not None:
-                vlines.extend(p["relevant_values"])
+            vlines = [p["mean"]] if p["mean"] == 0 else [0]
+            # if p["relevant_values"] is not None:
+            #     vlines.extend(p["relevant_values"])
 
             # Create individual scatter plot for this parameter
             plot_individual = fig.create_plot(
@@ -426,8 +427,8 @@ if show_individual_estimations or show_distribution_parameters:
                 ymin=0-0.5,
                 ymax=number_fish-0.5,
                 yticks=None,
-                xmin=p["min"],
-                xmax=p["max"],
+                xmin=p["min"]-(p["max"]-p["min"])/20,
+                xmax=p["max"]+(p["max"]-p["min"])/20,
                 xticks=[p["min"], p["mean"], p["max"]],
                 xl=p['label_show'].capitalize(),
                 vlines=vlines
@@ -491,11 +492,11 @@ if show_individual_estimations or show_distribution_parameters:
                 ymin=0,
                 ymax=50,
                 yticks=[0, 50] if i_p == 0 else None,
-                xmin=p["min"],
-                xmax=p["max"],
+                xmin=p["min"]-(p["max"]-p["min"])/20,
+                xmax=p["max"]+(p["max"]-p["min"])/20,
                 xticks=[p["min"], p["mean"], p["max"]],
                 xl=p['label_show'].capitalize(),
-                vlines=[p["mean"]] if p["mean"] == 0 else []
+                vlines=[p["mean"]] if p["mean"] == 0 else [0]
             )
 
             # Draw histogram line

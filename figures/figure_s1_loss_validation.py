@@ -124,13 +124,14 @@ if show_loss_reduction:
             loss_list.append(loss_end)
 
         # Create loss plot
+        ylim_low_with_offset = ylim[0] - ylim[-1]/20
         plot_title = models_in_group['label_show']
         plot_loss = fig.create_plot(
             plot_label=style.get_plot_label() if i_group == 0 else None,
             plot_title=plot_title,
             xpos=xpos, ypos=ypos,
             plot_height=plot_height, plot_width=plot_width,
-            ymin=ylim[0], ymax=ylim[-1],
+            ymin=ylim_low_with_offset, ymax=ylim[-1],
             yticks=[ylim[0], int(np.mean(ylim)), ylim[-1]],
             yl="Loss" if i_group == 0 else None,
             xl="Iteration", xmin=0.5, xmax=2.5,
