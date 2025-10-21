@@ -5,6 +5,10 @@ class ConfigurationExperiment():
     time_end_stimulus = 40  # (s)
     time_experimental_trial = 50  # (s)
 
+    time_start_stimulus_alt = 10  # (s)
+    time_end_stimulus_alt = 20  # (s)
+    time_experimental_trial_alt = 25  # (s)
+
     coherence_list = [0, 25, 50, 100]  # (%)
 
     ResponseTimeColumn = "interbout_interval"

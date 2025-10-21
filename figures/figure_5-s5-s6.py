@@ -122,7 +122,7 @@ for m in models_in_mutation_list:
         print(f"No data for group {m['label_show']}")
 
 # Time window filter used repeatedly later: restrict analysis to stimulus window
-query_time = f'start_time > {ConfigurationExperiment.time_start_stimulus} and end_time < {ConfigurationExperiment.time_end_stimulus}'
+query_time = f'start_time > {ConfigurationExperiment.time_start_stimulus_alt} and end_time < {ConfigurationExperiment.time_end_stimulus_alt}'
 
 # =============================================================================
 # Toggle which figures to show
