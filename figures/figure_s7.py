@@ -4,7 +4,6 @@
 # It bootstraps parameter samples to estimate correlation matrices and their
 # variability, computes p-values for deviations from baseline, and creates
 # multi-panel figures showing correlation structure and trajectories.
-# Only comments were added — the code below is identical to what you provided.
 
 import itertools
 
