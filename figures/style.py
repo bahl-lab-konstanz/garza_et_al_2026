@@ -1,5 +1,4 @@
 import copy
-from abc import ABC
 
 from analysis.personal_dirs.Roberto.style import Style
 from analysis.personal_dirs.Roberto.utils.palette import Palette

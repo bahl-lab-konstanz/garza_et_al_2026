@@ -28,4 +28,11 @@ directory unchanged to have the project tree organized consistently to the paths
 
 
 ### Dependencies
-For the figure scripts to run, you need the `figure_helper` library, which is now only available [here](). 
+To install the core dependencies with conda:
+- Open terminal
+- Navigate to root directory of this project
+- Run `conda env create --file=environment.yaml`
+ 
+Additionally, to run specific portions of the project, you'll need custom library still in development:
+- To produce the figures, the `figure_helper` library is now only available [here]();
+- To produce the model, the `rg_modeling_framework` library is now only available [here]().
