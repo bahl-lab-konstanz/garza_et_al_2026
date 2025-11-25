@@ -62,7 +62,7 @@ palette = style.palette["default"]
 do_basic_computation = True  # keep always True in the present version of the script
 show_parameter_space = False
 show_correlation_matrices = True
-show_trajectory_correlation = True
+show_trajectory_correlation = False
 
 # Make a standard figure (container for all subplots)
 fig = Figure()
@@ -178,6 +178,7 @@ if do_basic_computation:
     relation_tensor_synthetic_combined_delta = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
 
     # Control correlation used as baseline for fish comparison
+    relation_fish_original = np.array(df_model_fish_original.corr())
     relation_control_original = np.array(df_model_control_original.corr())
     delta_corr_fish = np.abs(np.array(df_model_fish_original.corr()) - relation_control_original)
     # Combined fish+control resampling for null distributions
@@ -237,6 +238,14 @@ if do_basic_computation:
     relation_matrix_fish = np.mean(relation_tensor_fish, axis=0)
     relation_matrix_fish[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 0
     relation_matrix_fish_std = np.std(relation_tensor_fish, axis=0)
+
+    pooled_std = np.eye(relation_matrix_fish_std.shape[0]) + np.sqrt((relation_matrix_fish_std**2 + relation_matrix_control_std**2) / 2)
+    cohens_d_matrix = np.abs(relation_matrix_fish - relation_matrix_control) / pooled_std
+    cohens_d_matrix[np.where(p_value_fish > p_value_threshold)] = np.nan
+
+    pooled_std_control = np.eye(relation_matrix_sampling.shape[0]) + np.sqrt((relation_matrix_sampling_std**2 + relation_matrix_control_std**2) / 2)
+    cohens_d_matrix_control = np.abs(relation_matrix_sampling - relation_matrix_control) / pooled_std_control
+    cohens_d_matrix_control[np.where(p_value_synthetic > p_value_threshold)] = np.nan
 
 if show_parameter_space:
     ##### scatterplots in parameter space
@@ -386,6 +395,46 @@ if show_correlation_matrices:
     divider = make_axes_locatable(plot_corrected.ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plot_corrected.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[0, 0.01, 0.05, 0.1])
+
+    plot_cohens_d_control = fig.create_plot(plot_title="Cohen's d Fit",
+                                    xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
+                                    plot_width=plot_size_matrix,
+                                    xmin=-0.5, xmax=len(ConfigurationDDM.parameter_list) - 0.5,
+                                    xticklabels_rotation=90,
+                                    xticks=np.arange(len(ConfigurationDDM.parameter_list)),
+                                    xticklabels=[p["label_show"].capitalize() for p in
+                                                 ConfigurationDDM.parameter_list],
+                                    ymin=-0.5, ymax=len(ConfigurationDDM.parameter_list) - 0.5)
+    xpos += padding + plot_size_matrix
+
+    x_ = np.arange(len(ConfigurationDDM.parameter_list))
+    x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
+    y = x.T
+    im = plot_cohens_d_control.draw_image(cohens_d_matrix_control, (-0.5, len(ConfigurationDDM.parameter_list) - 0.5,
+                                                    len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
+                                  colormap='Greens', zmin=0, zmax=1, image_interpolation=None)
+
+    plot_cohens_d = fig.create_plot(plot_title="Cohen's d Fish",
+                                     xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
+                                     plot_width=plot_size_matrix,
+                                     xmin=-0.5, xmax=len(ConfigurationDDM.parameter_list) - 0.5,
+                                     xticklabels_rotation=90,
+                                     xticks=np.arange(len(ConfigurationDDM.parameter_list)),
+                                     xticklabels=[p["label_show"].capitalize() for p in
+                                                  ConfigurationDDM.parameter_list],
+                                     ymin=-0.5, ymax=len(ConfigurationDDM.parameter_list) - 0.5)
+    xpos += padding + plot_size_matrix
+
+    x_ = np.arange(len(ConfigurationDDM.parameter_list))
+    x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
+    y = x.T
+    im = plot_cohens_d.draw_image(cohens_d_matrix, (-0.5, len(ConfigurationDDM.parameter_list) - 0.5,
+                                                  len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
+                                   colormap='Greens', zmin=0, zmax=1, image_interpolation=None)
+
+    divider = make_axes_locatable(plot_cohens_d.ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plot_cohens_d.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[0, 0.2, 0.5, 0.8, 1])
 
     xpos = xpos_start
     ypos -= padding * 2 + plot_size_matrix
