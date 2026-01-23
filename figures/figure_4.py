@@ -7,12 +7,12 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.service.statistics_service import StatisticsService
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.service.statistics_service import StatisticsService
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel
 
 # =============================================================================
 # OVERVIEW
@@ -435,9 +435,9 @@ if show_distribution_parameters:
 
         models_in_age_list[i_age]["reset_list"] = reset_list
 
-    print("RESET | quantiles [40th, 50th, 60th, 80th]")
-    for m_age in models_in_age_list:
-        print(f"AGE: {m_age['label_show']} | reset: {np.quantile(m_age['reset_list'], [0.4, 0.5, 0.6, 0.8])}")
+    # print("RESET | quantiles [40th, 50th, 60th, 80th]")
+    # for m_age in models_in_age_list:
+    #     print(f"AGE: {m_age['label_show']} | reset: {np.quantile(m_age['reset_list'], [0.4, 0.5, 0.6, 0.8])}")
 
     # =============================================================================
     # Plot D1 — Histogram panels for each parameter x age group (small panels grid)

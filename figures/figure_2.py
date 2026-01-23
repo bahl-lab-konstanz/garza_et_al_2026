@@ -27,12 +27,12 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.model.core.params import Parameter, ParameterList
-from rg_behavior_model.model.ddm import DDMstable
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.model.core.params import Parameter, ParameterList
+from garza_et_al_2026.model.ddm import DDMstable
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel
 
 # ================================================================
 # Environment and paths
@@ -40,7 +40,7 @@ from rg_behavior_model.utils.constants import StimulusParameterLabel
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])     # input data directory
 path_save = Path(env['PATH_SAVE'])   # directory where figures will be saved
-path_data = path_dir / 'base_dataset'  # location of dataset files
+path_data = path_dir / 'base_dataset_5dpfWT'  # location of dataset files
 
 
 # ================================================================

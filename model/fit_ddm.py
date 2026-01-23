@@ -5,12 +5,13 @@ from pathlib import Path
 from dotenv import dotenv_values
 import pandas as pd
 
-from analysis_helpers.analysis.personal_dirs.Roberto.model.drift_diffusion.core.ddm_stable import DDMstable
-from analysis_helpers.analysis.personal_dirs.Roberto.model.utils.params import Parameter, ParameterList
-from analysis_helpers.analysis.personal_dirs.Roberto.model.utils.signal import InputSignal
-from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
-from analysis_helpers.analysis.personal_dirs.Roberto.utils.constants import StimulusParameterLabel, Direction, ResponseTimeColumn
-from analysis_helpers.analysis.personal_dirs.Roberto.utils.pre_analysis import PreAnalysis
+from garza_et_al_2026.model.core.params import ParameterList, Parameter
+from garza_et_al_2026.model.core.signal import InputSignal
+from garza_et_al_2026.model.ddm import DDMstable
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.service.df_service import DFService
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel, Direction
 
 if __name__ == '__main__':
     # PARAMETERS
@@ -65,7 +66,7 @@ if __name__ == '__main__':
 
     # MODEL DEFINITION
     dt = 0.01
-    response_time_label = ResponseTimeColumn  # 'response_time'
+    response_time_label = ConfigurationExperiment.ResponseTimeColumn  # 'response_time'
     # parameters
     parameters = ParameterList()
     parameters.add_parameter("dt", Parameter(value=dt))
@@ -276,7 +277,7 @@ if __name__ == '__main__':
             df_output_model = pd.concat([df_output_model, df_model], ignore_index=True)
 
             if save_single_model:
-                PreAnalysis.update_df(
+                DFService.update_df(
                     df_new=df_model,
                     df_start=pd.DataFrame(),
                     save_result=True,
@@ -285,7 +286,7 @@ if __name__ == '__main__':
                 )
 
                 if save_single_error:
-                    PreAnalysis.update_df(
+                    DFService.update_df(
                         df_new=pd.concat(fitting_df_list),
                         df_start=pd.DataFrame(),
                         save_result=True,
@@ -332,7 +333,7 @@ if __name__ == '__main__':
     # SAVE RESULTS
     if save_synthetic_dataframe:
         df_output_data = pd.concat(df_output_data, ignore_index=True)
-        PreAnalysis.update_df(
+        DFService.update_df(
             df_new=df_output_data,
             df_start=pd.DataFrame(),
             save_result=True,
@@ -342,7 +343,7 @@ if __name__ == '__main__':
         )
 
     if save_model:
-        PreAnalysis.update_df(
+        DFService.update_df(
             df_new=df_output_model,
             df_start=pd.DataFrame(),
             save_result=True,
@@ -352,7 +353,7 @@ if __name__ == '__main__':
 
     if save_error:
         df_error = pd.concat(df_error_list, ignore_index=True)
-        PreAnalysis.update_df(
+        DFService.update_df(
             df_new=df_error,
             df_start=pd.DataFrame(),
             save_result=True,

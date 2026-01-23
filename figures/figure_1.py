@@ -5,11 +5,11 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel
 from rg_modeling_framework.src.service.statistics_service import StatisticsService
 
 # =============================================================================
@@ -18,7 +18,7 @@ from rg_modeling_framework.src.service.statistics_service import StatisticsServi
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
 path_save = Path(env['PATH_SAVE'])
-path_data = path_dir / "base_dataset"
+path_data = path_dir / "base_dataset_5dpfWT"
 
 # =============================================================================
 # Plot style and layout configuration

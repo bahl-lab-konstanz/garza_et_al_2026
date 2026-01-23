@@ -30,10 +30,10 @@ import pathlib
 from dotenv import dotenv_values
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel
 
 # --------------------------------------------------------------------------
 # Load environment variables (data paths, save directory)
@@ -67,9 +67,9 @@ analysed_parameter_list = ConfigurationExperiment.coherence_list
 # List of models to compare with different loss functions
 models_in_loss_list = [
     {"label_show": r"$D_{KL}^*$",
-     "path": fr"{path_dir}\base_dataset",
-     "path_data": fr"{path_dir}\base_dataset\data_fish_all.hdf5",
-     "path_simulation": fr"{path_dir}\base_dataset\data_synthetic_fish_all.hdf5",
+     "path": fr"{path_dir}\base_dataset_5dpfWT",
+     "path_data": fr"{path_dir}\base_dataset_5dpfWT\data_fish_all.hdf5",
+     "path_simulation": fr"{path_dir}\base_dataset_5dpfWT\data_synthetic_fish_all.hdf5",
      "ylim": [0, 20]},
     {"label_show": r"$D_{KL}$",
      "path": fr"{path_dir}\5_dpf_dkl",

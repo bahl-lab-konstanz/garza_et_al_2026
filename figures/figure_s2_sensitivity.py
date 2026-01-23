@@ -37,14 +37,14 @@ from pathlib import Path
 from dotenv import dotenv_values
 from scipy.stats import mannwhitneyu
 
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.model.core.params import ParameterList, Parameter
-from rg_behavior_model.model.ddm import DDMstable
-from rg_behavior_model.service.fast_functions import count_entries_in_dict
-from rg_behavior_model.service.model_service import ModelService
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import Direction, StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.model.core.params import ParameterList, Parameter
+from garza_et_al_2026.model.ddm import DDMstable
+from garza_et_al_2026.service.fast_functions import count_entries_in_dict
+from garza_et_al_2026.service.model_service import ModelService
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import Direction, StimulusParameterLabel
 from analysis.utils.figure_helper import Figure
 
 
@@ -54,7 +54,7 @@ from analysis.utils.figure_helper import Figure
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])               # Directory containing model/data files
 path_save = Path(env['PATH_SAVE'])             # Output directory for saving figures
-path_data = path_dir / "base_dataset"          # Dataset subdirectory
+path_data = path_dir / "base_dataset_5dpfWT"          # Dataset subdirectory
 
 
 # ------------------------------------------------------------
@@ -334,4 +334,4 @@ for i_p, p in enumerate(ConfigurationDDM.parameter_list):
 # Save final figure
 # -----------------------------------------------------------------------------
 if save_result:
-    fig.save(path_save / "figure_s3_sensitivity.pdf", open_file=False, tight=style.page_tight)
+    fig.save(path_save / "figure_s2_sensitivity.pdf", open_file=False, tight=style.page_tight)

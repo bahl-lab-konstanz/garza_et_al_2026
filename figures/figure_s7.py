@@ -16,9 +16,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
 
 # Load environment variables with input/output paths
 env = dotenv_values()
@@ -36,6 +36,7 @@ high_corr_threshold = 0.5      # Threshold used when marking "high" correlations
 corr_threshold = 0.6
 no_corr_threshold = 0.3
 p_value_threshold = 0.01       # Significance threshold for p-values
+cohens_d_threshold = 1
 
 # configurations figure (styling and sizes pulled from BehavioralModelStyle)
 style = BehavioralModelStyle()
@@ -60,7 +61,7 @@ palette = style.palette["default"]
 
 # Feature toggles (turn visualization sections on/off)
 do_basic_computation = True  # keep always True in the present version of the script
-show_parameter_space = False
+show_parameter_space = True
 show_correlation_matrices = True
 show_trajectory_correlation = False
 
@@ -240,11 +241,11 @@ if do_basic_computation:
     relation_matrix_fish_std = np.std(relation_tensor_fish, axis=0)
 
     pooled_std = np.eye(relation_matrix_fish_std.shape[0]) + np.sqrt((relation_matrix_fish_std**2 + relation_matrix_control_std**2) / 2)
-    cohens_d_matrix = np.abs(relation_matrix_fish - relation_matrix_control) / pooled_std
+    cohens_d_matrix = (relation_matrix_fish - relation_matrix_control) / pooled_std
     cohens_d_matrix[np.where(p_value_fish > p_value_threshold)] = np.nan
 
     pooled_std_control = np.eye(relation_matrix_sampling.shape[0]) + np.sqrt((relation_matrix_sampling_std**2 + relation_matrix_control_std**2) / 2)
-    cohens_d_matrix_control = np.abs(relation_matrix_sampling - relation_matrix_control) / pooled_std_control
+    cohens_d_matrix_control = (relation_matrix_sampling - relation_matrix_control) / pooled_std_control
     cohens_d_matrix_control[np.where(p_value_synthetic > p_value_threshold)] = np.nan
 
 if show_parameter_space:
@@ -281,7 +282,7 @@ if show_parameter_space:
                                       hlines=[0], vlines=[0])
             xpos += padding + plot_width
 
-            plot_xy.draw_scatter(y_p, x_p, elw=0, alpha=0.5)
+            plot_xy.draw_scatter(x_p, y_p, elw=0, alpha=0.5)
 
         xpos = xpos_start
         ypos -= padding + plot_height
@@ -412,29 +413,121 @@ if show_correlation_matrices:
     y = x.T
     im = plot_cohens_d_control.draw_image(cohens_d_matrix_control, (-0.5, len(ConfigurationDDM.parameter_list) - 0.5,
                                                     len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
-                                  colormap='Greens', zmin=0, zmax=1, image_interpolation=None)
+                                  colormap='PRGn', zmin=-1, zmax=1, image_interpolation=None)
 
-    plot_cohens_d = fig.create_plot(plot_title="Cohen's d Fish",
-                                     xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
-                                     plot_width=plot_size_matrix,
-                                     xmin=-0.5, xmax=len(ConfigurationDDM.parameter_list) - 0.5,
-                                     xticklabels_rotation=90,
-                                     xticks=np.arange(len(ConfigurationDDM.parameter_list)),
-                                     xticklabels=[p["label_show"].capitalize() for p in
-                                                  ConfigurationDDM.parameter_list],
-                                     ymin=-0.5, ymax=len(ConfigurationDDM.parameter_list) - 0.5)
-    xpos += padding + plot_size_matrix
-
-    x_ = np.arange(len(ConfigurationDDM.parameter_list))
-    x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
-    y = x.T
-    im = plot_cohens_d.draw_image(cohens_d_matrix, (-0.5, len(ConfigurationDDM.parameter_list) - 0.5,
-                                                  len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
-                                   colormap='Greens', zmin=0, zmax=1, image_interpolation=None)
-
-    divider = make_axes_locatable(plot_cohens_d.ax)
+    divider = make_axes_locatable(plot_cohens_d_control.ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plot_cohens_d.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[0, 0.2, 0.5, 0.8, 1])
+    plot_cohens_d_control.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[-1, -0.5, 0, 0.5, 1])
+
+    xpos = xpos_start
+    ypos -= padding * 2 + plot_size_matrix
+    models_in_age_list = [
+        {"label_show": "5dpf",
+         "path": fr"{path_dir}/age_analysis/5_dpf", },
+        {"label_show": "6dpf",
+         "path": fr"{path_dir}/age_analysis/6_dpf", },
+        {"label_show": "7dpf",
+         "path": fr"{path_dir}/age_analysis/7_dpf", },
+        {"label_show": "8dpf",
+         "path": fr"{path_dir}/age_analysis/8_dpf", },
+        {"label_show": "9dpf",
+         "path": fr"{path_dir}/age_analysis/9_dpf", },
+    ]
+    cohens_d_matrix_age_traj = []
+    for i_m, m in enumerate(models_in_age_list):
+        path = m["path"]
+        i_m_ = 0
+        model_list = [[] for i_p in range(len(ConfigurationDDM.parameter_list))]
+        model_dict_group = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
+        model_dict_group["id"] = []
+        for model_filepath in Path(path).glob('model_*_fit.hdf5'):
+            model_filename = str(model_filepath.name)
+            df_model_fit_list = pd.read_hdf(model_filepath)
+            best_score = np.min(df_model_fit_list['score'])
+            df_model_fit = df_model_fit_list.loc[df_model_fit_list['score'] == best_score]
+
+            for i_p, p in enumerate(ConfigurationDDM.parameter_list):
+                model_list[i_p].append(df_model_fit[p["label"]].iloc[0])
+                model_dict_group[p["label"]].append(df_model_fit[p["label"]][0])
+            model_dict_group["id"].append(model_filename.split("_")[2])
+            i_m_ += 1
+
+        model_array = np.array(model_list)
+        df_model_group_original = pd.DataFrame(model_dict_group)
+        df_model_group_original.set_index('id', inplace=True)
+
+        df_model_group_list = BehavioralProcessing.randomly_sample_df(
+            df=df_model_group_original,
+            sample_number=number_bootstraps,
+            sample_percentage_size=sample_percentage_size,
+            with_replacement=True
+        )
+        relation_tensor_group = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
+        for i_df in range(number_bootstraps):
+            df_model_group = df_model_group_list[i_df]
+            relation_tensor_group[i_df] = np.array(df_model_group[[p["label"] for p in ConfigurationDDM.parameter_list]].corr())
+
+        relation_matrix_group = np.mean(relation_tensor_group, axis=0)
+        relation_matrix_group[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 0
+        relation_matrix_group_std = np.std(relation_tensor_group, axis=0)
+
+        # Control correlation used as baseline for fish comparison
+        relation_group_original = np.array(df_model_group_original.corr())
+        relation_control_original = np.array(df_model_control_original.corr())
+        delta_corr_group = np.abs(np.array(df_model_group_original.corr()) - relation_control_original)
+        # Combined fish+control resampling for null distributions
+        df_model_group_combined_original = pd.concat((df_model_group_original, df_model_control_original))
+        df_model_group_combined_list_0 = BehavioralProcessing.randomly_sample_df(df=df_model_group_combined_original,
+                                                                                sample_number=number_bootstraps,
+                                                                                sample_percentage_size=sample_percentage_size,
+                                                                                with_replacement=True)
+        df_model_group_combined_list_1 = BehavioralProcessing.randomly_sample_df(df=df_model_group_combined_original,
+                                                                                sample_number=number_bootstraps,
+                                                                                sample_percentage_size=sample_percentage_size,
+                                                                                with_replacement=True)
+        relation_tensor_group_combined_delta = np.zeros(
+            (number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
+
+        # For each bootstrap iteration, compute correlation matrices for sampled datasets
+        for i_df in range(number_bootstraps):
+            df_model_group_combined_0 = df_model_group_combined_list_0[i_df]
+            corr_group_combined_0 = np.array(df_model_group_combined_0.corr())
+            df_model_group_combined_1 = df_model_group_combined_list_1[i_df]
+            corr_group_combined_1 = np.array(df_model_group_combined_1.corr())
+            relation_tensor_group_combined_delta[i_df] = np.abs(corr_group_combined_0 - corr_group_combined_1)
+
+        p_value_group = np.mean(relation_tensor_group_combined_delta >= delta_corr_group, axis=0)
+        p_value_group[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 1
+
+        pooled_std = np.eye(relation_matrix_group_std.shape[0]) + np.sqrt((relation_matrix_group_std ** 2 + relation_matrix_control_std ** 2) / 2)
+        cohens_d_matrix_age = (relation_matrix_group - relation_matrix_control) / pooled_std
+        cohens_d_matrix_age[np.where(p_value_group > p_value_threshold)] = np.nan
+        cohens_d_matrix_age[np.where(np.logical_not(p_value_corr_acceptable))] = np.nan
+
+        cohens_d_matrix_age_traj.append(cohens_d_matrix_age)
+
+        plot_cohens_d = fig.create_plot(plot_title=f"Cohen's d {m['label_show']}",
+                                         xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
+                                         plot_width=plot_size_matrix,
+                                         xmin=-0.5, xmax=len(ConfigurationDDM.parameter_list) - 0.5,
+                                         xticklabels_rotation=90,
+                                         xticks=np.arange(len(ConfigurationDDM.parameter_list)),
+                                         xticklabels=[p["label_show"].capitalize() for p in
+                                                      ConfigurationDDM.parameter_list],
+                                         ymin=-0.5, ymax=len(ConfigurationDDM.parameter_list) - 0.5)
+        xpos += padding + plot_size_matrix
+
+        x_ = np.arange(len(ConfigurationDDM.parameter_list))
+        x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
+        y = x.T
+        im = plot_cohens_d.draw_image(cohens_d_matrix_age, (-0.5, len(ConfigurationDDM.parameter_list) - 0.5,
+                                                      len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
+                                       colormap='PRGn', zmin=-1, zmax=1, image_interpolation=None)
+
+        if i_m == len(models_in_age_list)-1:
+            divider = make_axes_locatable(plot_cohens_d.ax)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            plot_cohens_d.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[-1, -0.5, 0, 0.5, 1])
 
     xpos = xpos_start
     ypos -= padding * 2 + plot_size_matrix
@@ -609,6 +702,7 @@ if show_trajectory_correlation:
             parameter_corr_trajectory_std[i_m, :, :] = np.nanstd(relation_tensor_group, axis=0)
             parameter_corr_trajectory_q25[i_m, :, :] = np.nanquantile(relation_tensor_group, q=0.25, axis=0)
             parameter_corr_trajectory_q75[i_m, :, :] = np.nanquantile(relation_tensor_group, q=0.75, axis=0)
+            parameter_pval_trajectory[i_m, :, :] = p_value_group
             parameter_pval_trajectory[i_m, :, :] = p_value_group
 
         # -------------------------------------------------------------------------

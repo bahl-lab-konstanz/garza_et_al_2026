@@ -42,6 +42,7 @@ IncorrectBout = 0
 CorrectBoutColumn = 'correct_bout'
 ResponseTimeColumn = 'interbout_interval'
 AngleChangeColumn = 'estimated_orientation_change'
+MAX_SCORE = 99999
 
 
 class Direction(Enum):

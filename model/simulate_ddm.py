@@ -7,15 +7,18 @@ from pathlib import Path
 from dotenv import dotenv_values
 import pandas as pd
 
-from analysis.personal_dirs.Roberto.utils.service.model_service import ModelService
-from analysis.personal_dirs.Roberto.model.drift_diffusion.core.ddm_stable import DDMstable
-from analysis.personal_dirs.Roberto.model.utils.params import Parameter, ParameterList
-from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
-from analysis.personal_dirs.Roberto.utils.constants import StimulusParameterLabel, Direction, ResponseTimeColumn
-from analysis.personal_dirs.Roberto.utils.pre_analysis import PreAnalysis
-from analysis.personal_dirs.Roberto.utils.toolkit import count_entries_in_dict
-
 import matplotlib as mpl
+
+from garza_et_al_2026.model.core.params import ParameterList, Parameter
+from garza_et_al_2026.model.ddm import DDMstable
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.service.fast_functions import count_entries_in_dict
+from garza_et_al_2026.service.model_service import ModelService
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel, Direction
+
+from garza_et_al_2026.service.df_service import DFService
+
 mpl.use('TkAgg')
 
 # PARAMETERS
@@ -43,7 +46,7 @@ if set_parameters_from_dir or compute_score:
     path_dir = Path(env['PATH_DIR'])
 
 dt = 0.01
-response_time_label = ResponseTimeColumn
+response_time_label = ConfigurationExperiment.ResponseTimeColumn
 analysed_parameter = StimulusParameterLabel.COHERENCE.value  # StimulusParameterLabel.PERIOD.value  #
 analysed_parameter_list = [0, 25, 50, 100]  # [3.75, 4.286, 10, 15, 30]  # [15, 30]   #
 try:
@@ -262,7 +265,7 @@ for index, parameters in enumerate(parameters_list):
             else:
                 file_name_save = f"data_synthetic_test_{(offset_label+index):03d}_{datetime.today().strftime('%Y-%m-%d_%H-%M-%S')}.hdf5"
 
-            PreAnalysis.update_df(
+            DFService.update_df(
                 df_new=df_output_data,
                 df_start=pd.DataFrame(),
                 save_result=True,
@@ -300,7 +303,7 @@ for index, parameters in enumerate(parameters_list):
             else:
                 file_name_save = f"model_test_{(offset_label+index):03d}_{datetime.today().strftime('%Y-%m-%d_%H-%M-%S')}.hdf5"
 
-            PreAnalysis.update_df(
+            DFService.update_df(
                 df_new=df_output_model,
                 df_start=pd.DataFrame(),
                 save_result=True,

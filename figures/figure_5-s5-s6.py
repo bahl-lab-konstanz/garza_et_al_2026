@@ -7,12 +7,12 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from analysis.utils.figure_helper import Figure
-from rg_behavior_model.figures.style import BehavioralModelStyle
-from rg_behavior_model.service.behavioral_processing import BehavioralProcessing
-from rg_behavior_model.service.statistics_service import StatisticsService
-from rg_behavior_model.utils.configuration_ddm import ConfigurationDDM
-from rg_behavior_model.utils.configuration_experiment import ConfigurationExperiment
-from rg_behavior_model.utils.constants import StimulusParameterLabel
+from garza_et_al_2026.figures.style import BehavioralModelStyle
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.service.statistics_service import StatisticsService
+from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel
 
 # =============================================================================
 # OVERVIEW
@@ -36,7 +36,7 @@ from rg_behavior_model.utils.constants import StimulusParameterLabel
 # =============================================================================
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
-path_data = path_dir / "harpaz_2021"
+path_data = path_dir / "genome_analysis"
 path_save = Path(env['PATH_SAVE'])
 
 # =============================================================================
@@ -77,6 +77,16 @@ models_in_mutation_list_figure_5 = [
      "path_simulation": f"{path_data}/scn1lab_NIBR_20200708/het/data_synthetic_fish_all-het.hdf5"},
 ]
 models_in_mutation_list_figure_s5 = [
+    {"label_show": "scn1lab +/+",
+     "path": f"{path_data}/scn1lab_zirc_20200710/wt",
+     "path_fish": f"{path_data}/scn1lab_zirc_20200710/wt/data_fish_all-wt.hdf5",
+     "path_simulation": f"{path_data}/scn1lab_zirc_20200710/wt/data_synthetic_fish_all-wt.hdf5"},
+    {"label_show": "scn1lab +/-",
+     "path": f"{path_data}/scn1lab_zirc_20200710/het",
+     "path_fish": f"{path_data}/scn1lab_zirc_20200710/het/data_fish_all-het.hdf5",
+     "path_simulation": f"{path_data}/scn1lab_zirc_20200710/het/data_synthetic_fish_all-het.hdf5"},
+]
+models_in_mutation_list_figure_s6 = [
     {"label_show": "disc +/+",
      "path": f"{path_data}/disc1_hetnix/wt",
      "path_fish": f"{path_data}/disc1_hetnix/wt/data_fish_all-wt.hdf5",
@@ -89,16 +99,6 @@ models_in_mutation_list_figure_s5 = [
      "path": f"{path_data}/disc1_hetnix/hom",
      "path_fish": f"{path_data}/disc1_hetnix/hom/data_fish_all-hom.hdf5",
      "path_simulation": f"{path_data}/disc1_hetnix/hom/data_synthetic_fish_all-hom.hdf5"},
-]
-models_in_mutation_list_figure_s6 = [
-    {"label_show": "scn1lab +/+",
-     "path": f"{path_data}/scn1lab_zirc_20200710/wt",
-     "path_fish": f"{path_data}/scn1lab_zirc_20200710/wt/data_fish_all-wt.hdf5",
-     "path_simulation": f"{path_data}/scn1lab_zirc_20200710/wt/data_synthetic_fish_all-wt.hdf5"},
-    {"label_show": "scn1lab +/-",
-     "path": f"{path_data}/scn1lab_zirc_20200710/het",
-     "path_fish": f"{path_data}/scn1lab_zirc_20200710/het/data_fish_all-het.hdf5",
-     "path_simulation": f"{path_data}/scn1lab_zirc_20200710/het/data_synthetic_fish_all-het.hdf5"},
 ]
 
 # pick data to plug in according to the desired output figure

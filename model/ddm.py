@@ -4,12 +4,12 @@ import time
 import numpy as np
 import numba as nb
 
-from analysis.personal_dirs.Roberto.utils.service.model_service import ModelService
-from analysis.personal_dirs.Roberto.model.utils.model import Model, InputSignal
-from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
-from analysis.personal_dirs.Roberto.utils.constants import ResponseTimeColumn, CorrectBoutColumn, StimulusParameterLabel
-
-MAX_SCORE = 99999
+from garza_et_al_2026.model.core.model import Model
+from garza_et_al_2026.model.core.signal import InputSignal
+from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
+from garza_et_al_2026.service.model_service import ModelService
+from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from garza_et_al_2026.utils.constants import StimulusParameterLabel, MAX_SCORE
 
 
 class DDMstable(Model):
@@ -291,9 +291,7 @@ class DDMstable(Model):
                 score_dict[key] = {}
                 response_time_list = np.array(output_signal[key]["response_time_list"])
                 bout_decision_list = np.array(output_signal[key]["bout_decision_list"])
-                if len(response_time_list) > self.max_bout_per_simulation:  # or \
-                    # len(response_time_list) > self.max_bout_per_simulation:
-                    # np.min(response_time_list) > self.max_response_time_allowed:
+                if len(response_time_list) > self.max_bout_per_simulation:
                     score = MAX_SCORE
                     score_dict["score"] = score
                     return score_dict
@@ -309,10 +307,10 @@ class DDMstable(Model):
                     df_train_filtered = self.data_train.query(f"start_time > {time_start} and end_time < {time_end}")
                 else:
                     df_train_filtered = df_train_time[df_train_time[self.analysed_parameter] == key]
-                df_correct = df_train_filtered[df_train_filtered[CorrectBoutColumn] == 1]
-                data_correct = [] if df_correct.empty else df_correct[ResponseTimeColumn]
-                df_error = df_train_filtered[df_train_filtered[CorrectBoutColumn] == 0]
-                data_error = [] if df_error.empty else df_error[ResponseTimeColumn]
+                df_correct = df_train_filtered[df_train_filtered[ConfigurationExperiment.CorrectBoutColumn] == 1]
+                data_correct = [] if df_correct.empty else df_correct[ConfigurationExperiment.ResponseTimeColumn]
+                df_error = df_train_filtered[df_train_filtered[ConfigurationExperiment.CorrectBoutColumn] == 0]
+                data_error = [] if df_error.empty else df_error[ConfigurationExperiment.ResponseTimeColumn]
 
                 try:
                     number_individuals = len(df_train_filtered["fish_ID"].unique()) if self.multiple_individuals else 1
