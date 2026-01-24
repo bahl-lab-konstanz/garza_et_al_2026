@@ -5,13 +5,13 @@ from pathlib import Path
 from dotenv import dotenv_values
 import pandas as pd
 
-from garza_et_al_2026.model.core.params import ParameterList, Parameter
-from garza_et_al_2026.model.core.signal import InputSignal
-from garza_et_al_2026.model.ddm import DDMstable
-from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
-from garza_et_al_2026.service.df_service import DFService
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
-from garza_et_al_2026.utils.constants import StimulusParameterLabel, Direction
+from model.core.params import ParameterList, Parameter
+from model.core.signal import InputSignal
+from model.ddm import DDMstable
+from service.behavioral_processing import BehavioralProcessing
+from service.df_service import DFService
+from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import StimulusParameterLabel, Direction
 
 if __name__ == '__main__':
     # PARAMETERS

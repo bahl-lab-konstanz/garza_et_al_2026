@@ -4,12 +4,12 @@ import time
 import numpy as np
 import numba as nb
 
-from garza_et_al_2026.model.core.model import Model
-from garza_et_al_2026.model.core.signal import InputSignal
-from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
-from garza_et_al_2026.service.model_service import ModelService
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
-from garza_et_al_2026.utils.constants import StimulusParameterLabel, MAX_SCORE
+from model.core.model import Model
+from model.core.signal import InputSignal
+from service.behavioral_processing import BehavioralProcessing
+from service.model_service import ModelService
+from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import StimulusParameterLabel, MAX_SCORE
 
 
 class DDMstable(Model):

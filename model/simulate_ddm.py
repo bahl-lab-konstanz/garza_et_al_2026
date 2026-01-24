@@ -9,15 +9,15 @@ import pandas as pd
 
 import matplotlib as mpl
 
-from garza_et_al_2026.model.core.params import ParameterList, Parameter
-from garza_et_al_2026.model.ddm import DDMstable
-from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
-from garza_et_al_2026.service.fast_functions import count_entries_in_dict
-from garza_et_al_2026.service.model_service import ModelService
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
-from garza_et_al_2026.utils.constants import StimulusParameterLabel, Direction
+from model.core.params import ParameterList, Parameter
+from model.ddm import DDMstable
+from service.behavioral_processing import BehavioralProcessing
+from service.fast_functions import count_entries_in_dict
+from service.model_service import ModelService
+from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import StimulusParameterLabel, Direction
 
-from garza_et_al_2026.service.df_service import DFService
+from service.df_service import DFService
 
 mpl.use('TkAgg')
 

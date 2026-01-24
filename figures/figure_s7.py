@@ -15,10 +15,10 @@ from dotenv import dotenv_values
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-from analysis.utils.figure_helper import Figure
-from garza_et_al_2026.figures.style import BehavioralModelStyle
-from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
-from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
+from figures.style import BehavioralModelStyle
+from service.behavioral_processing import BehavioralProcessing
+from service.figure_helper import Figure
+from utils.configuration_ddm import ConfigurationDDM
 
 # Load environment variables with input/output paths
 env = dotenv_values()

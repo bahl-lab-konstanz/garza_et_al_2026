@@ -23,11 +23,11 @@ from pathlib import Path
 from dotenv import dotenv_values
 from scipy.stats import mannwhitneyu
 
-from analysis.utils.figure_helper import Figure
-from garza_et_al_2026.figures.style import BehavioralModelStyle
-from garza_et_al_2026.service.statistics_service import StatisticsService
-from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
+from figures.style import BehavioralModelStyle
+from service.figure_helper import Figure
+from service.statistics_service import StatisticsService
+from utils.configuration_ddm import ConfigurationDDM
+from utils.configuration_experiment import ConfigurationExperiment
 
 # -----------------------------------------------------------------------------
 # Load environment variables and set paths

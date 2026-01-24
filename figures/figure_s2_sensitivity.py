@@ -37,15 +37,15 @@ from pathlib import Path
 from dotenv import dotenv_values
 from scipy.stats import mannwhitneyu
 
-from garza_et_al_2026.figures.style import BehavioralModelStyle
-from garza_et_al_2026.model.core.params import ParameterList, Parameter
-from garza_et_al_2026.model.ddm import DDMstable
-from garza_et_al_2026.service.fast_functions import count_entries_in_dict
-from garza_et_al_2026.service.model_service import ModelService
-from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
-from garza_et_al_2026.utils.constants import Direction, StimulusParameterLabel
-from analysis.utils.figure_helper import Figure
+from figures.style import BehavioralModelStyle
+from model.core.params import ParameterList, Parameter
+from model.ddm import DDMstable
+from service.fast_functions import count_entries_in_dict
+from service.figure_helper import Figure
+from service.model_service import ModelService
+from utils.configuration_ddm import ConfigurationDDM
+from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import Direction, StimulusParameterLabel
 
 
 # ------------------------------------------------------------

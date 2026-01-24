@@ -19,13 +19,13 @@ from dotenv import dotenv_values
 from scipy.stats import mannwhitneyu
 
 # Local project imports for figure generation, model config, and statistics
-from analysis.utils.figure_helper import Figure
-from garza_et_al_2026.figures.style import BehavioralModelStyle
-from garza_et_al_2026.service.behavioral_processing import BehavioralProcessing
-from garza_et_al_2026.service.statistics_service import StatisticsService
-from garza_et_al_2026.utils.configuration_ddm import ConfigurationDDM
-from garza_et_al_2026.utils.configuration_experiment import ConfigurationExperiment
-from garza_et_al_2026.utils.constants import StimulusParameterLabel
+from figures.style import BehavioralModelStyle
+from service.behavioral_processing import BehavioralProcessing
+from service.figure_helper import Figure
+from service.statistics_service import StatisticsService
+from utils.configuration_ddm import ConfigurationDDM
+from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import StimulusParameterLabel
 
 # -------------------------------------------------------------------------
 # Environment setup and paths
