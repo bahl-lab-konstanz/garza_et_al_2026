@@ -42,7 +42,7 @@ path_save = Path(env['PATH_SAVE'])
 # =============================================================================
 # Plot style and layout defaults
 # =============================================================================
-style = BehavioralModelStyle(plot_label_i=1)
+style = BehavioralModelStyle(plot_label_i=0)
 
 plot_height = style.plot_height
 plot_width = style.plot_width_small
@@ -55,7 +55,7 @@ ypos = ypos_start
 padding = style.padding
 padding_small = style.padding_small
 
-palette = style.palette["arlecchino"]
+palette = style.palette["default"]
 number_bins_hist = 15  # number of bins used in histogram plots
 
 # =============================================================================
@@ -146,7 +146,7 @@ fig = Figure()
 #    initial and final loss for each model as a short line (iteration 0 -> iteration end).
 #  - This gives a compact view of how much loss decreased during training/fitting.
 if show_loss_reduction:
-    ypos = ypos - padding_small
+    # ypos = ypos - padding_small
     for i_mutation, models_in_mutation in enumerate(models_in_mutation_list):
         loss_list = []
         loss_start_list = []
@@ -168,13 +168,14 @@ if show_loss_reduction:
         plot_loss = fig.create_plot(plot_label=style.get_plot_label() if i_mutation == 0 else None,
                                     plot_title=plot_title,
                                     xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width,
-                                    ymin=0, ymax=20, yticks=[0, 10, 20] if i_mutation == 0 else None,
-                                    yl="Loss" if i_mutation == 0 else None,
-                                    xl="Iteration", xmin=0.5, xmax=2.5, xticks=[1, 2],
-                                    xticklabels=["0", "1500"])
+                                    ymin=0, ymax=20, yticks=[0, 10, 20],
+                                    yl="Loss",
+                                    xl="Iteration" if i_mutation == len(models_in_mutation_list)-1 else None,
+                                    xmin=0.5, xmax=2.5,
+                                    xticks=[1, 2] if i_mutation == len(models_in_mutation_list)-1 else None,
+                                    xticklabels=["0", "1500"] if i_mutation == len(models_in_mutation_list)-1 else None)
         # Increment horizontal position for the next small panel
-        xpos += plot_width + padding_small
-        ypos = ypos
+        ypos = ypos - padding - plot_height
 
         # Draw a thin line connecting start and end loss for each model (and a small scatter on endpoints)
         for i_loss in range(len(loss_list)):
@@ -184,8 +185,8 @@ if show_loss_reduction:
             plot_loss.draw_scatter((1, 2), (loss_start, loss_end), ec="k", pc="k", alpha=0.5)
 
     # Reset to left margin and move vertically down after the row of small panels
-    xpos = xpos_start
-    ypos = ypos - padding - plot_height
+    xpos += plot_width + padding
+    ypos = ypos_start
 
 # =============================================================================
 # Plot B — Psychometric curve: empirical data vs. synthetic model
@@ -235,8 +236,9 @@ if show_psychometric_curve:
                                  plot_width=plot_width,
                                  errorbar_area=True,
                                  xmin=min(ConfigurationExperiment.coherence_list), xmax=max(ConfigurationExperiment.coherence_list),
-                                 xticks=None,
-                                 yl="Percentage\ncorrect swims (%)" if i_m == 0 else None, ymin=45, ymax=100, yticks=[50, 100] if i_m == 0 else None, hlines=[50])
+                                 xticks=[int(p) for p in ConfigurationExperiment.coherence_list] if i_m == len(models_in_mutation_list)-1 else None,
+                                 xl="Iteration" if i_m == len(models_in_mutation_list)-1 else None,
+                                 yl="Percentage\ncorrect swims (%)", ymin=45, ymax=100, yticks=[50, 100], hlines=[50])
 
         # Draw empirical data (solid) and model (dashed). Errorbars drawn from std lists.
         plot_0.draw_line(x=parameter_list_data, y=correct_bout_list_data*100,
@@ -246,16 +248,19 @@ if show_psychometric_curve:
                          errorbar_area=True, yerr=np.array(std_correct_bout_list_sim)*100,  # / np.sqrt(number_models),
                          lc="k", lw=1, line_dashes=(1, 2))
 
-        # spacing: small pad between intermediate plots, larger pad to finalize the row
-        if i_m == len(models_in_mutation_list) - 1:
-            pad = padding
-        else:
-            pad = padding_small
-        xpos = xpos + pad + plot_width
+        # # spacing: small pad between intermediate plots, larger pad to finalize the row
+        # if i_m == len(models_in_mutation_list) - 1:
+        #     pad = padding
+        # else:
+        #     pad = padding_small
+        # xpos = xpos + pad + plot_width
 
-    # reset position for the next row
-    xpos = xpos_start
-    ypos = ypos - padding - plot_height
+        # move to next row
+        ypos = ypos - padding - plot_height
+
+    # reset position for the next column
+    xpos += plot_width + padding
+    ypos = ypos_start
 
 # =============================================================================
 # Plot C — Coherence vs Interbout Interval (IBI), data vs. model
@@ -311,27 +316,30 @@ if show_coherence_vs_interbout_interval:
         plot_0 = fig.create_plot(plot_label=style.get_plot_label() if i_m == 0 else None, xpos=xpos, ypos=ypos,
                                  plot_height=plot_height, plot_width=plot_width,
                                  errorbar_area=True,
-                                 xl=ConfigurationExperiment.coherence_label,
+                                 xl=ConfigurationExperiment.coherence_label if i_m == len(models_in_mutation_list)-1 else None,
                                  xmin=min(ConfigurationExperiment.coherence_list),
                                  xmax=max(ConfigurationExperiment.coherence_list),
-                                 xticks=[int(p) for p in ConfigurationExperiment.coherence_list],
-                                 yl="Interbout\ninterval (s)" if i_m == 0 else None,
-                                 ymin=0, ymax=3, yticks=[0, 1.50, 3] if i_m == 0 else None)
+                                 xticks=[int(p) for p in ConfigurationExperiment.coherence_list] if i_m == len(models_in_mutation_list)-1 else None,
+                                 yl="Interbout\ninterval (s)",
+                                 ymin=0, ymax=3, yticks=[0, 1.50, 3])
 
         # Draw data (solid) and simulation (dashed) with errorbars
         plot_0.draw_line(x=parameter_list_data, y=interbout_interval_list_data,
                          errorbar_area=True, yerr=np.array(std_interbout_interval_list_data),  # / np.sqrt(number_individuals),
-                         lc="k", lw=1, label=f"data" if i_m == 0 else None)
+                         lc="k", lw=1, label=f"Data" if i_m == 0 else None)
         plot_0.draw_line(x=parameter_list_sim, y=interbout_interval_list_sim,
                          errorbar_area=True, yerr=np.array(std_interbout_interval_list_sim),  # / np.sqrt(number_models),
-                         lc="k", lw=1, line_dashes=(1, 2), label=f"simulation" if i_m == 0 else None)
+                         lc="k", lw=1, line_dashes=(1, 2), label=f"Simulation" if i_m == 0 else None)
 
-        # spacing between small panels
-        if i_m == len(models_in_mutation_list) - 1:
-            pad = padding
-        else:
-            pad = padding_small
-        xpos = xpos + pad + plot_width
+        # # spacing between small panels
+        # if i_m == len(models_in_mutation_list) - 1:
+        #     pad = padding
+        # else:
+        #     pad = padding_small
+        # xpos = xpos + pad + plot_width
+
+        # move to next row
+        ypos = ypos - padding - plot_height
 
     xpos = xpos_start
     ypos = ypos - padding - plot_height

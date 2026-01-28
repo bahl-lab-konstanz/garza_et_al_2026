@@ -322,16 +322,17 @@ for i_p, p in enumerate(ConfigurationDDM.parameter_list):
     xlim_positive_significant = np.array([x_positive_significant, np.max(perturbation_array) / 1.5]) * 100
     plot_p.draw_line(xlim_positive_significant, np.ones(2) * 0.85, lc="k")
     plot_p.draw_text(np.mean(xlim_positive_significant), 1.2, "*")
-    print(fr"{p['label_show']} | significant for an perturbation of $\pm${x_positive_significant}%")
+    print(fr"{p['label_show']} | significant for an perturbation of +{int(x_positive_significant * 100)}%")
 
     # Mark significant perturbations (negative side)
     x_negative_significant = np.max(significant_list[significant_list < perturbation_epsilon])
     xlim_negative_significant = np.array([np.min(perturbation_array) / 1.5, x_negative_significant]) * 100
     plot_p.draw_line(xlim_negative_significant, np.ones(2) * 0.95, lc="k")
     plot_p.draw_text(np.mean(xlim_negative_significant), 1.2, "*")
+    print(fr"{p['label_show']} | significant for an perturbation of {int(x_negative_significant * 100)}%")
 
 # -----------------------------------------------------------------------------
 # Save final figure
 # -----------------------------------------------------------------------------
 if save_result:
-    fig.save(path_save / "figure_s2_sensitivity.pdf", open_file=False, tight=style.page_tight)
+    fig.save(path_save / "figure_s3_sensitivity.pdf", open_file=False, tight=style.page_tight)
