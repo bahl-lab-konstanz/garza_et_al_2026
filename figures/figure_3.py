@@ -36,6 +36,7 @@ from utils.constants import StimulusParameterLabel
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
 path_data = path_dir / "base_dataset_5dpfWT"  # directory containing behavioral datasets
+path_data_repeats = path_dir / "base_dataset_5dpfWT_repeats"  # containing datasets for repeatability test
 path_save = Path(env['PATH_SAVE'])     # directory to save output figures
 
 # =====================================================================
@@ -67,6 +68,7 @@ lw = 1  # default line width
 # Toggles to enable/disable different parts of the figure
 # =====================================================================
 show_loss_reduction = True
+show_repeatability = True
 show_psychometric_curve = True
 show_coherence_vs_interbout_interval = True
 show_rt_distributions = True
@@ -147,6 +149,57 @@ if show_loss_reduction:
             plot_loss.draw_scatter((1, 2), loss_array, ec=df_dict[fish_id]["color"], pc=df_dict[fish_id]["color"], label=f"fish {i_fish_id}")
     ypos = ypos - padding - plot_height
     xpos = xpos_start
+
+# =====================================================================
+# PLOT 2: Testing repeatability of latent variable estimation
+# =====================================================================
+if show_repeatability:
+    # Configuration for repeatability analysis
+    test_id_list = ["205", "506", "201"]
+    plot_width_here = 0.7  # style.plot_width_small
+    padding_here = style.padding_small
+    palette_here = style.palette["default"]
+
+    # Iterate over repeatability test runs
+    for i_test_id, test_id in enumerate(test_id_list):
+        # Plot each parameter trajectory
+        for i_p, p in enumerate(ConfigurationDDM.parameter_list):
+
+            # Create subplot per parameter
+            plot_p = fig.create_plot(
+                plot_label=style.get_plot_label() if i_p == 0 and i_test_id == 0 else None,
+                plot_title=f"{p['label_show'].capitalize()}" if i_test_id == 0 else None,
+                xpos=xpos, ypos=ypos,
+                plot_height=plot_height, plot_width=plot_width_here,
+                errorbar_area=False,
+                ymin=p["min"], ymax=p["max"],
+                yticks=[p["min"], p["mean"], p["max"]],
+                yl=f"Fish {i_test_id+1}" if i_p == 0 else None, xl="Iteration" if i_test_id == len(test_id_list)-1 else None,
+                xmin=0.5, xmax=2.5, xticks=[1, 2] if i_test_id == len(test_id_list)-1 else None,
+                xticklabels=["0", "1500"] if i_test_id == len(test_id_list)-1 else None,
+            )
+            xpos += (plot_height + padding_short)
+
+            # Collect end-of-fit parameter values
+            p_fit_end_list = []
+            for path_fit in path_data_repeats.glob(f"error_fish_{test_id}_*_fit.hdf5"):
+                df_fit = pd.read_hdf(path_fit)
+                p_fit_start = df_fit[f"{p['label']}_value"][0]
+                p_fit_end = df_fit[f"{p['label']}_value"][len(df_fit) - 1]
+                p_fit_end_list.append(p_fit_end)
+
+                # Plot line connecting start → end values for each fit
+                plot_p.draw_line((1, 2), (p_fit_start, p_fit_end),
+                                 lc=palette_here[i_p], lw=0.05, alpha=0.5)
+                plot_p.draw_scatter((1, 2), (p_fit_start, p_fit_end),
+                                    pc=palette_here[i_p], ec=palette_here[i_p])
+
+            # Overlay median final value
+            plot_p.draw_scatter([2], [np.median(p_fit_end_list)], pc="k")
+
+        xpos = xpos_start
+        ypos -= plot_height + padding
+
 
 # =====================================================================
 # PLOT 2: Psychometric curve (performance vs coherence)
