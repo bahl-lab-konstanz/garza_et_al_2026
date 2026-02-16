@@ -5,6 +5,8 @@ import numpy as np
 from pathlib import Path
 
 from dotenv import dotenv_values
+from scipy import stats
+from sklearn.linear_model import LinearRegression
 
 from figures.style import BehavioralModelStyle
 from service.behavioral_processing import BehavioralProcessing
@@ -67,26 +69,32 @@ number_bins_hist = 15  # number of bins used in histogram plots
 #  - path_simulation: aggregated HDF5 file with synthetic/model data for that age
 models_in_age_list = [
     {"label_show": "5dpf",
+     "age_value": 5,
      "path": f"{path_data}/5_dpf",
      "path_fish": f"{path_data}/5_dpf/data_fish_all.hdf5",
      "path_simulation": f"{path_data}/5_dpf/data_synthetic_fish_all.hdf5"},
     {"label_show": "6dpf",
+     "age_value": 6,
      "path": f"{path_data}/6_dpf",
      "path_fish": f"{path_data}/6_dpf/data_fish_all.hdf5",
      "path_simulation": f"{path_data}/6_dpf/data_synthetic_fish_all.hdf5"},
     {"label_show": "7dpf",
+     "age_value": 7,
      "path": f"{path_data}/7_dpf",
      "path_fish": f"{path_data}/7_dpf/data_fish_all.hdf5",
      "path_simulation": f"{path_data}/7_dpf/data_synthetic_fish_all.hdf5"},
     {"label_show": "8dpf",
+     "age_value": 8,
      "path": f"{path_data}/8_dpf",
      "path_fish": f"{path_data}/8_dpf/data_fish_all.hdf5",
      "path_simulation": f"{path_data}/8_dpf/data_synthetic_fish_all.hdf5"},
     {"label_show": "9dpf",
+     "age_value": 9,
      "path": f"{path_data}/9_dpf",
      "path_fish": f"{path_data}/9_dpf/data_fish_all.hdf5",
      "path_simulation": f"{path_data}/9_dpf/data_synthetic_fish_all.hdf5"},
 ]
+age_value_array = np.array([m["age_value"] for m in models_in_age_list])
 
 # =============================================================================
 # Load data files for each age group (empirical + synthetic)
@@ -114,6 +122,8 @@ query_time = f'start_time > {ConfigurationExperiment.time_start_stimulus} and en
 show_loss_reduction = True
 show_psychometric_curve = True
 show_coherence_vs_interbout_interval = True
+do_basic_computation = True
+show_regression = True
 show_distribution_parameters = True
 
 # =============================================================================
@@ -151,7 +161,7 @@ if show_loss_reduction:
         plot_loss = fig.create_plot(plot_label=style.get_plot_label() if i_age == 0 else None,
                                     plot_title=plot_title,
                                     xpos=xpos, ypos=ypos, plot_height=plot_height, plot_width=plot_width,
-                                    ymin=0, ymax=20, yticks=[0, 10, 20] if i_age == 0 else None,
+                                    ymin=0, ymax=40, yticks=[0, 20, 40] if i_age == 0 else None,
                                     yl="Loss" if i_age == 0 else None,
                                     xl="Iteration", xmin=0.5, xmax=2.5, xticks=[1, 2],
                                     xticklabels=["0", "1500"])
@@ -165,6 +175,8 @@ if show_loss_reduction:
             loss_end = loss_end_list[i_loss]
             plot_loss.draw_line((1, 2), (loss_start, loss_end), lc="k", lw=0.05, alpha=0.5)
             plot_loss.draw_scatter((1, 2), (loss_start, loss_end), ec="k", pc="k", alpha=0.5)
+
+        print(f"AGE {5 + i_age} | max starting loss: {np.max(loss_start_list)}")
 
     # Reset to left margin and move vertically down after the row of small panels
     xpos = xpos_start
@@ -227,7 +239,7 @@ if show_psychometric_curve:
                          lc="k", lw=1)
         plot_0.draw_line(x=parameter_list_sim, y=correct_bout_list_sim*100,
                          errorbar_area=True, yerr=np.array(std_correct_bout_list_sim)*100,  # / np.sqrt(number_models),
-                         lc="k", lw=1, line_dashes=(1, 2))
+                         lc="#666666", lw=1, line_dashes=(1, 2))
 
         # spacing: small pad between intermediate plots, larger pad to finalize the row
         if i_m == len(models_in_age_list) - 1:
@@ -299,7 +311,7 @@ if show_coherence_vs_interbout_interval:
                                  xmax=max(ConfigurationExperiment.coherence_list),
                                  xticks=[int(p) for p in ConfigurationExperiment.coherence_list],
                                  yl="Interbout\ninterval (s)" if i_m == 0 else None,
-                                 ymin=0, ymax=3, yticks=[0, 1.50, 3] if i_m == 0 else None)
+                                 ymin=0, ymax=2, yticks=[0, 1, 2] if i_m == 0 else None)
 
         # Draw data (solid) and simulation (dashed) with errorbars
         plot_0.draw_line(x=parameter_list_data, y=interbout_interval_list_data,
@@ -307,7 +319,7 @@ if show_coherence_vs_interbout_interval:
                          lc="k", lw=1, label=f"data" if i_m == 0 else None)
         plot_0.draw_line(x=parameter_list_sim, y=interbout_interval_list_sim,
                          errorbar_area=True, yerr=np.array(std_interbout_interval_list_sim),  # / np.sqrt(number_models),
-                         lc="k", lw=1, line_dashes=(1, 2), label=f"simulation" if i_m == 0 else None)
+                         lc="#666666", lw=1, line_dashes=(1, 2), label=f"simulation" if i_m == 0 else None)
 
         # spacing between small panels
         if i_m == len(models_in_age_list) - 1:
@@ -317,7 +329,7 @@ if show_coherence_vs_interbout_interval:
         xpos = xpos + pad + plot_width
 
     xpos = xpos_start
-    ypos = ypos - padding - plot_height
+    ypos = ypos - padding - plot_height - padding_small
 
 # =============================================================================
 # Plot D — Distribution of DDM parameter estimates and statistical tests
@@ -331,7 +343,7 @@ if show_coherence_vs_interbout_interval:
 # Notes & variables:
 #  - from_best_model = True -> for each fitted fish/model, only the best-fit entry (min score) is kept.
 #  - number_resampling_bootstrapping and threshold_p_value_significant are read from StatisticsService configuration.
-if show_distribution_parameters:
+if do_basic_computation:
     # small-panel sizes and padding for this section
     plot_height_here = style.plot_height_small
     padding_here = style.padding_in_plot_small
@@ -347,8 +359,9 @@ if show_distribution_parameters:
     raw_data_dict = {p["label"]: {i_age: [] for i_age in range(len(models_in_age_list))} for p in ConfigurationDDM.parameter_list}
     median_groups = {p["label"]: np.zeros(len(models_in_age_list)) for p in ConfigurationDDM.parameter_list}
     quantiles_groups = {p["label"]: np.zeros((len(models_in_age_list), 3)) for p in ConfigurationDDM.parameter_list}
+    model_parameter_median_array = {}
 
-    # Loop through age groups, read models, and compute per-model medians
+        # Loop through age groups, read models, and compute per-model medians
     for i_age, models_in_age in enumerate(models_in_age_list):
         model_dict = {}
         path_dir = Path(models_in_age["path"])
@@ -366,9 +379,7 @@ if show_distribution_parameters:
         model_parameter_median_dict["score"] = {}
         model_parameter_dict["score"] = {}
         # matrix to collect medians: row 0 -> score, rows 1.. -> parameters, cols->models (fish_list)
-        model_parameter_median_array = np.zeros((len(ConfigurationDDM.parameter_list)+1, len(fish_list)))
-
-        reset_list = []
+        model_parameter_median_array[i_age] = np.zeros((len(ConfigurationDDM.parameter_list) + 1, len(fish_list)))
 
         # Iterate all model ids (keys from model_dict)
         for i_model, id_model in enumerate(model_dict.keys()):
@@ -383,14 +394,14 @@ if show_distribution_parameters:
             # Score medians and distributions
             model_parameter_median_dict["score"][id_fish] = np.median(df_model_fit_list["score"])
             model_parameter_dict["score"][id_fish] = np.array(df_model_fit_list["score"])
-            model_parameter_median_array[0, i_model] = np.median(df_model_fit_list["score"])
+            model_parameter_median_array[i_age][0, i_model] = np.median(df_model_fit_list["score"])
 
             # For each DDM parameter, store medians & full arrays
             for i_p, p in enumerate(ConfigurationDDM.parameter_list):
                 p_median = np.median(df_model_fit_list[p["label"]])
                 model_parameter_median_dict[p["label"]][id_fish] = p_median
                 model_parameter_dict[p["label"]][id_fish] = np.array(df_model_fit_list[p["label"]])
-                model_parameter_median_array[i_p+1, i_model] = p_median
+                model_parameter_median_array[i_age][i_p+1, i_model] = p_median
 
                 # Save per-model medians to raw_data_dict_per_fish and per-age raw_data_dict
                 if id_model not in raw_data_dict_per_fish[p["label"]][i_age].keys():
@@ -400,50 +411,82 @@ if show_distribution_parameters:
 
                 raw_data_dict[p["label"]][i_age].append(p_median)
 
-                if p["label_show"] == "reset":
-                    reset_list.append(p_median)
+if show_regression:
+    raw_data_p_list = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
 
+    for i_p, p in enumerate(ConfigurationDDM.parameter_list):
+
+        for i_age in range(len(models_in_age_list)):
+            raw_data_p_list[p["label"]].extend([age_value_array[i_age], d] for d in raw_data_dict[p["label"]][i_age])
+
+        raw_data_p_array = np.array(raw_data_p_list[p["label"]])
+        reg = LinearRegression().fit(raw_data_p_array[:, 0].reshape(-1, 1), raw_data_p_array[:, 1].reshape(-1, 1))
+        p_predicted = reg.predict(age_value_array.reshape(-1, 1))
+
+        # Pearson correlation and p-value
+        r, p_corr = stats.pearsonr(raw_data_p_array[:, 0], raw_data_p_array[:, 1], alternative="two-sided")
+        models_in_age_list[i_age]["r"] = r
+        models_in_age_list[i_age]["p_corr"] = p_corr
+        print(f"{p['label_show'].capitalize()} | r: {r} | p_corr: {p_corr}")
+
+        plot_p = fig.create_plot(plot_label=style.get_plot_label() if i_p == 0 else None,
+                                 plot_title=f"r={r:.03f}\np_corr={p_corr:.03f}",
+                                 xpos=xpos, ypos=ypos,
+                                 plot_height=plot_height, plot_width=plot_width,
+                                 errorbar_area=False,
+                                 xmin=p["min"], xmax=p["max"],
+                                 xticks=[p["min"], p["mean"], p["max"]],
+                                 xl=p["label_show"].capitalize(),
+                                 ymin=np.min(age_value_array) - 0.5, ymax=np.max(age_value_array) + 0.5,
+                                 yticks=age_value_array if i_p == 0 else None,
+                                 yticklabels=list(reversed([m["label_show"] for m in models_in_age_list])) if i_p == 0 else None)
+
+        plot_p.draw_scatter(raw_data_p_array[:, 1], np.max(age_value_array) + (np.min(age_value_array) - raw_data_p_array[:, 0]), pc=palette[i_p], elw=0)
+        plot_p.draw_line(p_predicted, np.max(age_value_array) + (np.min(age_value_array) - age_value_array), pc="k", line_dashes=(1, 2))
+        xpos += padding_small + plot_width
+    xpos = xpos_start
+    ypos -= padding + plot_height
+
+    # =============================================================================
+    # Plot D1 — Histogram panels for each parameter x age group (small panels grid)
+    # =============================================================================
+    # Draw a grid: for each age (columns) and parameter (rows), show the distribution of fitted medians.
+
+if show_distribution_parameters:
+    for i_age in range(len(models_in_age_list)):
         # For each parameter: compute median across models in this age group and bootstrap quantiles
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             median_groups[p["label"]][i_age] = np.median(raw_data_dict[p["label"]][i_age])
 
             # Draw bootstrap samples of the per-model medians to compute empirical quantiles
             model_parameter_sampling_list = StatisticsService.sample_random(
-                array=model_parameter_median_array[i_p + 1, :], sample_number=number_resampling_bootstrapping,
+                array=model_parameter_median_array[i_age][i_p + 1, :], sample_number=number_resampling_bootstrapping,
                 sample_percentage_size=1, with_replacement=True, add_noise=None)
 
             median_list = np.array([np.median(m) for m in model_parameter_sampling_list])
             quantiles_groups[p["label"]][i_age, :] = np.quantile(median_list, [0.05, 0.5, 0.95])
-            print(f"group {models_in_age['label_show']} | {p['label_show']}: {quantiles_groups[p['label']][i_age, 1]:.05f} [{quantiles_groups[p['label']][i_age, 0]:.05f}, {quantiles_groups[p['label']][i_age, 2]:.05f}]")
+            print(f"group {models_in_age_list[i_age]['label_show']} | {p['label_show']}: {quantiles_groups[p['label']][i_age, 1]:.05f} [{quantiles_groups[p['label']][i_age, 0]:.05f}, {quantiles_groups[p['label']][i_age, 2]:.05f}]")
 
         # Build histograms (density) of medians for the score and each parameter
         hist_model_parameter_median_dict = {}
         bin_model_parameter_median_dict = {}
-        hist_model_parameter_median_dict[ConfigurationDDM.score_config["label"]], bin_model_parameter_median_dict[ConfigurationDDM.score_config["label"]] = StatisticsService.get_hist(
-                model_parameter_median_array[0, :], center_bin=True,  hist_range=[ConfigurationDDM.score_config["min"], ConfigurationDDM.score_config["max"]],
-                bins=number_bins_hist,
-                density=True
-            )
+        hist_model_parameter_median_dict[ConfigurationDDM.score_config["label"]], bin_model_parameter_median_dict[
+            ConfigurationDDM.score_config["label"]] = StatisticsService.get_hist(
+            model_parameter_median_array[i_age][0, :], center_bin=True,
+            hist_range=[ConfigurationDDM.score_config["min"], ConfigurationDDM.score_config["max"]],
+            bins=number_bins_hist,
+            density=True
+        )
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
-            hist_model_parameter_median_dict[p["label"]], bin_model_parameter_median_dict[p["label"]] = StatisticsService.get_hist(
-                model_parameter_median_array[i_p + 1, :], center_bin=True,  hist_range=[p["min"], p["max"]],
+            hist_model_parameter_median_dict[p["label"]], bin_model_parameter_median_dict[
+                p["label"]] = StatisticsService.get_hist(
+                model_parameter_median_array[i_age][i_p + 1, :], center_bin=True, hist_range=[p["min"], p["max"]],
                 bins=number_bins_hist,
                 density=True
             )
             # Collect histogram values across ages (columns = age groups)
             distribution_trajectory_dict[p["label"]][:, i_age] = hist_model_parameter_median_dict[p["label"]]
 
-        models_in_age_list[i_age]["reset_list"] = reset_list
-
-    # print("RESET | quantiles [40th, 50th, 60th, 80th]")
-    # for m_age in models_in_age_list:
-    #     print(f"AGE: {m_age['label_show']} | reset: {np.quantile(m_age['reset_list'], [0.4, 0.5, 0.6, 0.8])}")
-
-    # =============================================================================
-    # Plot D1 — Histogram panels for each parameter x age group (small panels grid)
-    # =============================================================================
-    # Draw a grid: for each age (columns) and parameter (rows), show the distribution of fitted medians.
-    for i_age in range(len(models_in_age_list)):
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             plot_n = fig.create_plot(plot_label=style.get_plot_label() if i_p == 0 and i_age == 0 else None, xpos=xpos, ypos=ypos,
                                      plot_height=plot_height_here, plot_width=plot_width,
