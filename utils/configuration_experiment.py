@@ -16,4 +16,4 @@ class ConfigurationExperiment():
 
     coherence_label = "Coherence (%)"
     all_fish_label = "all"
-    example_fish_list = ["001", "002", "003"]  # identifier of three example fish
+    example_fish_list = ["205", "506", "201"]  # identifier of three example fish

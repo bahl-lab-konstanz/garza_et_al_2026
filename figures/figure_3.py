@@ -403,6 +403,8 @@ if show_individual_estimations or show_distribution_parameters:
     padding_here = style.padding
     palette = style.palette["default"]
     number_resampling = 10000  # Number of resamples for bootstrapping histograms
+    quantile_list = [0, 0.5, 1]  # [0.1, 0.5, 0.9]
+    n_repeats = 10
 
     # Initialize dictionaries to store distributions and raw data
     distribution_trajectory_dict = {p["label"]: np.zeros(number_bins_hist) for p in ConfigurationDDM.parameter_list}
@@ -412,31 +414,38 @@ if show_individual_estimations or show_distribution_parameters:
     n_models = 0
 
     # Collect all model fit files
-    for model_filepath in path_data.glob('model_*_fit.hdf5'):
-        model_filename = str(model_filepath.name)
+    for model_filepath in path_data_repeats.glob('data_fish_*.hdf5'):
+        model_id = str(model_filepath.name).split("_")[2].replace(".hdf5", "")
         # Key by the model ID extracted from filename
-        model_dict[model_filename.split("_")[2]] = {"fit": model_filepath}
+        model_dict[model_id] = {"fit": []}
+        for model_filepath in path_data_repeats.glob(f'model_fish_{model_id}_*.hdf5'):
+            model_dict[model_id]["fit"].append(pd.read_hdf(model_filepath))
 
     fish_list = np.arange(len(model_dict.keys()))
 
     # Initialize dictionaries for median and full parameter values
     model_parameter_median_dict = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
+    model_parameter_quant_dict = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
     model_parameter_dict = {p["label"]: {} for p in ConfigurationDDM.parameter_list}
     model_parameter_median_dict["score"] = {}
+    model_parameter_quant_dict["score"] = {}
     model_parameter_dict["score"] = {}
     model_parameter_median_array = np.zeros((len(ConfigurationDDM.parameter_list)+1, len(fish_list)))
+    model_parameter_quant_array = np.zeros((len(ConfigurationDDM.parameter_list)+1, len(fish_list), 3))
+    model_parameter_raw_array = np.zeros((len(ConfigurationDDM.parameter_list)+1, len(fish_list), n_repeats))
 
     # Loop over models to extract median parameter values
     for i_model, id_model in enumerate(model_dict.keys()):
-        df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
+        df_model_fit_list = pd.concat(model_dict[id_model]["fit"])
         id_fish = i_model
 
-        if from_best_model:
-            best_score = np.min(df_model_fit_list['score'])
-            df_model_fit_list = df_model_fit_list.loc[df_model_fit_list['score'] == best_score]
+        # if from_best_model:
+        #     best_score = np.min(df_model_fit_list['score'])
+        #     df_model_fit_list = df_model_fit_list.loc[df_model_fit_list['score'] == best_score]
 
         # Store score statistics
         model_parameter_median_dict["score"][id_fish] = np.median(df_model_fit_list["score"])
+        model_parameter_quant_dict["score"][id_fish] = np.quantile(df_model_fit_list["score"], quantile_list)
         model_parameter_dict["score"][id_fish] = np.array(df_model_fit_list["score"])
         model_parameter_median_array[0, i_model] = np.median(df_model_fit_list["score"])
 
@@ -444,8 +453,13 @@ if show_individual_estimations or show_distribution_parameters:
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             p_median = np.median(df_model_fit_list[p["label"]])
             model_parameter_median_dict[p["label"]][id_fish] = p_median
+            model_parameter_quant_dict[p["label"]][id_fish] = np.quantile(df_model_fit_list[p["label"]], quantile_list)
             model_parameter_dict[p["label"]][id_fish] = np.array(df_model_fit_list[p["label"]])
             model_parameter_median_array[i_p+1, i_model] = p_median
+            model_parameter_quant_array[i_p+1, i_model] = model_parameter_quant_dict[p["label"]][id_fish]
+            array_here = np.full(10, np.nan)
+            array_here[:len(df_model_fit_list[p["label"]])] = np.array(df_model_fit_list[p["label"]])
+            model_parameter_raw_array[i_p+1, i_model] = array_here
 
             # Organize raw data per fish
             if id_model not in raw_data_dict_per_fish[p["label"]].keys():
@@ -491,17 +505,26 @@ if show_individual_estimations or show_distribution_parameters:
             xpos += plot_width_here + padding_short
 
             # Draw scatter for median parameter values
-            plot_individual.draw_scatter(model_parameter_median_array[i_p + 1, :], fish_id_array, pc=palette[i_p], elw=0)
+            for fish_id in fish_id_array:
+                model_id = list(model_dict.keys())[fish_id]
+                try:
+                    fish_index = ConfigurationExperiment.example_fish_list.index(model_id)
+                    lc = style.palette["fish_code"][fish_index]
+                    print(f"Fish {ConfigurationExperiment.example_fish_list[fish_index]} | {p['label']}: {model_parameter_median_array[i_p+1, len(fish_id_array)-1-fish_id]}")
+                except ValueError:
+                    lc = palette[i_p]
+                plot_individual.draw_line(model_parameter_quant_array[i_p + 1, len(fish_id_array)-1-fish_id], np.ones(3)*fish_id, lc=lc)  #, alpha=0.5)
+            plot_individual.draw_scatter(model_parameter_quant_array[i_p + 1, :, 1], fish_id_array, pc=palette[i_p], elw=0)
 
         # Reset X position and update Y position for next row of plots
         xpos = xpos_start
-        ypos -= plot_height_here + padding_here
+        ypos -= plot_height + padding_here
 
     # -----------------------------------------------------------
     # Section: Parameter distributions (histograms)
     # -----------------------------------------------------------
     if show_distribution_parameters:
-        plot_height_here = style.plot_height_small
+        plot_height_here = style.plot_width_small
 
         # Compute histograms for score
         hist_model_parameter_median_dict = {}
@@ -551,6 +574,16 @@ if show_individual_estimations or show_distribution_parameters:
                 xl=p['label_show'].capitalize(),
                 vlines=[p["mean"]] if p["mean"] == 0 else [0]
             )
+
+            for i_repeat in range(model_parameter_raw_array.shape[2]):
+                hist_model_parameter, bin_model_parameter = StatisticsService.get_hist(
+                    model_parameter_raw_array[i_p + 1, :, i_repeat],
+                    center_bin=True,
+                    hist_range=[p["min"], p["max"]],
+                    bins=number_bins_hist,
+                    density=True
+                )
+                plot_n.draw_line(bin_model_parameter, hist_model_parameter * 100, lc="k", alpha=0.5, lw=0.2)
 
             # Draw histogram line
             plot_n.draw_line(bin_model_parameter_median_dict[p["label"]], distribution_trajectory_dict[p["label"]] * 100,
