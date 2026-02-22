@@ -36,7 +36,6 @@ from utils.constants import StimulusParameterLabel
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])
 path_data = path_dir / "base_dataset_5dpfWT"  # directory containing behavioral datasets
-path_data_repeats = path_dir / "base_dataset_5dpfWT_repeats"  # containing datasets for repeatability test
 path_save = Path(env['PATH_SAVE'])     # directory to save output figures
 
 # =====================================================================
@@ -105,6 +104,9 @@ config_list = [
     {"label": "fit", "line_dashes": (2, 4), "alpha": 1, "color": "k"}
 ]
 
+# Number of model fits to show
+n_repeats = 10
+
 # Load datasets for each example fish
 for i_fish, fish in enumerate(fish_to_include_list):
     df_data = pd.read_hdf(path_data / f"data_fish_{fish}.hdf5")
@@ -147,6 +149,7 @@ if show_loss_reduction:
             # Plot line + scatter points for each fish
             plot_loss.draw_line((1, 2), loss_array, lc=df_dict[fish_id]["color"])
             plot_loss.draw_scatter((1, 2), loss_array, ec=df_dict[fish_id]["color"], pc=df_dict[fish_id]["color"], label=f"fish {i_fish_id}")
+            break  # load only 1 example fitting dynamics
     ypos = ypos - padding - plot_height
     xpos = xpos_start
 
@@ -182,7 +185,7 @@ if show_repeatability:
 
             # Collect end-of-fit parameter values
             p_fit_end_list = []
-            for path_fit in path_data_repeats.glob(f"error_fish_{test_id}_*_fit.hdf5"):
+            for i_error, path_fit in enumerate(path_data.glob(f"error_fish_{test_id}_*_fit.hdf5")):
                 df_fit = pd.read_hdf(path_fit)
                 p_fit_start = df_fit[f"{p['label']}_value"][0]
                 p_fit_end = df_fit[f"{p['label']}_value"][len(df_fit) - 1]
@@ -193,6 +196,7 @@ if show_repeatability:
                                  lc=palette_here[i_p], lw=0.05, alpha=0.5)
                 plot_p.draw_scatter((1, 2), (p_fit_start, p_fit_end),
                                     pc=palette_here[i_p], ec=palette_here[i_p])
+                if i_error + 1 >= n_repeats: break  # just get n_repeats models
 
             # Overlay median final value
             plot_p.draw_scatter([2], [np.median(p_fit_end_list)], pc="k")
@@ -403,8 +407,7 @@ if show_individual_estimations or show_distribution_parameters:
     padding_here = style.padding
     palette = style.palette["default"]
     number_resampling = 10000  # Number of resamples for bootstrapping histograms
-    quantile_list = [0, 0.5, 1]  # [0.1, 0.5, 0.9]
-    n_repeats = 10
+    quantile_list = [0.1, 0.5, 0.9]  # [0, 0.5, 1]  #
 
     # Initialize dictionaries to store distributions and raw data
     distribution_trajectory_dict = {p["label"]: np.zeros(number_bins_hist) for p in ConfigurationDDM.parameter_list}
@@ -414,12 +417,14 @@ if show_individual_estimations or show_distribution_parameters:
     n_models = 0
 
     # Collect all model fit files
-    for model_filepath in path_data_repeats.glob('data_fish_*.hdf5'):
+    for model_filepath in path_data.glob('data_fish_*.hdf5'):
         model_id = str(model_filepath.name).split("_")[2].replace(".hdf5", "")
+        if model_id == "all": continue  # skip merged data files
         # Key by the model ID extracted from filename
         model_dict[model_id] = {"fit": []}
-        for model_filepath in path_data_repeats.glob(f'model_fish_{model_id}_*.hdf5'):
+        for i_model, model_filepath in enumerate(path_data.glob(f'model_fish_{model_id}_*.hdf5')):
             model_dict[model_id]["fit"].append(pd.read_hdf(model_filepath))
+            if i_model+1 >= n_repeats: break  # just get n_repeats models
 
     fish_list = np.arange(len(model_dict.keys()))
 
@@ -457,7 +462,7 @@ if show_individual_estimations or show_distribution_parameters:
             model_parameter_dict[p["label"]][id_fish] = np.array(df_model_fit_list[p["label"]])
             model_parameter_median_array[i_p+1, i_model] = p_median
             model_parameter_quant_array[i_p+1, i_model] = model_parameter_quant_dict[p["label"]][id_fish]
-            array_here = np.full(10, np.nan)
+            array_here = np.full(n_repeats, np.nan)
             array_here[:len(df_model_fit_list[p["label"]])] = np.array(df_model_fit_list[p["label"]])
             model_parameter_raw_array[i_p+1, i_model] = array_here
 
@@ -475,7 +480,7 @@ if show_individual_estimations or show_distribution_parameters:
     if show_individual_estimations:
         plot_height_here = plot_height * 3
         number_fish = model_parameter_median_array.shape[1]
-        fish_id_array = np.flip(np.arange(number_fish))  # Y-axis: fish IDs in reverse order
+        fish_id_array = np.arange(number_fish)  # Y-axis: fish IDs in reverse order
 
         for i_p, p in enumerate(ConfigurationDDM.parameter_list):
             # Determine vertical lines to mark mean or relevant values
@@ -493,7 +498,7 @@ if show_individual_estimations or show_distribution_parameters:
                 yl="Fish ID" if i_p == 0 else None,
                 ymin=0-0.5,
                 ymax=number_fish-0.5,
-                yticks=None,
+                yticks=None, # yticks=np.arange(len(fish_id_array)), yticklabels=[str(value) for value in np.array([int(fi) for fi in model_dict.keys()])[fish_id_array]],
                 xmin=p["min"]-(p["max"]-p["min"])/20,
                 xmax=p["max"]+(p["max"]-p["min"])/20,
                 xticks=[p["min"], p["mean"], p["max"]],
@@ -505,7 +510,7 @@ if show_individual_estimations or show_distribution_parameters:
             xpos += plot_width_here + padding_short
 
             # Draw scatter for median parameter values
-            for fish_id in fish_id_array:
+            for i_fish_id, fish_id in enumerate(fish_id_array):
                 model_id = list(model_dict.keys())[fish_id]
                 try:
                     fish_index = ConfigurationExperiment.example_fish_list.index(model_id)
@@ -513,7 +518,7 @@ if show_individual_estimations or show_distribution_parameters:
                     print(f"Fish {ConfigurationExperiment.example_fish_list[fish_index]} | {p['label']}: {model_parameter_median_array[i_p+1, len(fish_id_array)-1-fish_id]}")
                 except ValueError:
                     lc = palette[i_p]
-                plot_individual.draw_line(model_parameter_quant_array[i_p + 1, len(fish_id_array)-1-fish_id], np.ones(3)*fish_id, lc=lc)  #, alpha=0.5)
+                plot_individual.draw_line(model_parameter_quant_array[i_p + 1, fish_id_array[i_fish_id]], np.ones(3)*fish_id, lc=lc)  #, alpha=0.5)
             plot_individual.draw_scatter(model_parameter_quant_array[i_p + 1, :, 1], fish_id_array, pc=palette[i_p], elw=0)
 
         # Reset X position and update Y position for next row of plots

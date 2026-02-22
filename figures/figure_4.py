@@ -5,8 +5,7 @@ import numpy as np
 from pathlib import Path
 
 from dotenv import dotenv_values
-from scipy import stats
-from sklearn.linear_model import LinearRegression
+from scipy.stats import linregress
 
 from figures.style import BehavioralModelStyle
 from service.behavioral_processing import BehavioralProcessing
@@ -419,12 +418,15 @@ if show_regression:
         for i_age in range(len(models_in_age_list)):
             raw_data_p_list[p["label"]].extend([age_value_array[i_age], d] for d in raw_data_dict[p["label"]][i_age])
 
+        # Compute linear regression
         raw_data_p_array = np.array(raw_data_p_list[p["label"]])
-        reg = LinearRegression().fit(raw_data_p_array[:, 0].reshape(-1, 1), raw_data_p_array[:, 1].reshape(-1, 1))
-        p_predicted = reg.predict(age_value_array.reshape(-1, 1))
+        res = linregress(raw_data_p_array[:, 0], raw_data_p_array[:, 1])
+        r = res.rvalue
+        p_corr = res.pvalue
+        reg = lambda x: x*res.slope + res.intercept
+        p_predicted = reg(age_value_array.reshape(-1, 1))
 
-        # Pearson correlation and p-value
-        r, p_corr = stats.pearsonr(raw_data_p_array[:, 0], raw_data_p_array[:, 1], alternative="two-sided")
+        # Store and log Pearson correlation and p-value
         models_in_age_list[i_age]["r"] = r
         models_in_age_list[i_age]["p_corr"] = p_corr
         print(f"{p['label_show'].capitalize()} | r: {r} | p_corr: {p_corr}")
