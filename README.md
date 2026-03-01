@@ -20,7 +20,7 @@ PATH_SAVE=<path_local>/results
 Then substitute `<path_local>` with the actual path to the directory where the `data` folder is located.
 
 ### Data
-Please download the datasets from [here](https://kondata.uni-konstanz.de/radar/en/dataset/kn59u9atf99nejfb?token=gbuuWeDDsgdBHftQPkiJ) and populate your `data` directory inside the project. Keep the organization of the 
+Please download the datasets from [here](https://doi.org/10.48606/kn59u9atf99nejfb) and populate your `data` directory inside the project. Keep the organization of the 
 directory unchanged to have the project tree organized consistently to the paths called in the scripts.
 
 ### Dependencies
