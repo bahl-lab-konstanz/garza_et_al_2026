@@ -200,6 +200,7 @@ if show_repeatability:
 
             # Overlay median final value
             plot_p.draw_scatter([2], [np.median(p_fit_end_list)], pc="k")
+            print(f"FISH {test_id} | {p['label']}: {np.median(p_fit_end_list)}")
 
         xpos = xpos_start
         ypos -= plot_height + padding
