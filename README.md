@@ -6,13 +6,13 @@ Here is an overview to navigate the project
 - `figures`: contains all scripts generating raw versions of the figures in the manuscript
 - `model`: contains the implementation of the model, together with a lightweight version of a modeling framework under development in the Bahl Lab
 - `utils` and `service`: contain useful constants, functions, and utility classes, used to run analysis and compute core quantities appearing in the figures
-- `data`: empty directory, please put here the data once you downloaded them (see paragraph _Data_)
+- `data`: empty directory, please put here the data once you have downloaded it (see paragraph _Data_)
 - `results`: empty directory where output figures will be stored 
 
 ### Environment variables
 In order for all the figure-generating scripts to get access to the right path and data, you will need to create a file 
 named `.env` in the same directory as this README file.
-Then open it and copy paste this template:
+Then open it and copy-paste this template:
 ```angular2html
 PATH_DIR=<path_local>/data
 PATH_SAVE=<path_local>/results
@@ -20,11 +20,11 @@ PATH_SAVE=<path_local>/results
 Then substitute `<path_local>` with the actual path to the directory where the `data` folder is located.
 
 ### Data
-Please download the datasets from [here](https://doi.org/10.48606/kn59u9atf99nejfb) and populate your `data` directory inside the project. Keep the organization of the 
+Please download the datasets from [here](https://doi.org/10.48606/jpy1fb90btzcqd58) and populate your `data` directory inside the project. Keep the organization of the 
 directory unchanged to have the project tree organized consistently to the paths called in the scripts.
 
 ### Dependencies
 To install the core dependencies with conda:
 - Open terminal
-- Navigate to root directory of this project
+- Navigate to the root directory of this project
 - Run `conda env create --file=environment.yaml`
