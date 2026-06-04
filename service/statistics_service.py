@@ -3,9 +3,9 @@ import random
 
 import numpy as np
 import pandas as pd
-from numba import jit, njit
+from numba import njit
 
-from analysis.personal_dirs.Roberto.utils.fast_functions import numba_histogram
+from utils.fast_functions import numba_histogram
 
 
 class StatisticsService:

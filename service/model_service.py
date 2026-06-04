@@ -1,7 +1,7 @@
 import numpy as np
 
-from analysis.personal_dirs.Roberto.utils.service.behavioral_processing import BehavioralProcessing
-from analysis.personal_dirs.Roberto.utils.constants import StimulusParameterLabel, CorrectBoutColumn, ResponseTimeColumn
+from service.behavioral_processing import BehavioralProcessing
+from utils.constants import StimulusParameterLabel, CorrectBoutColumn, ResponseTimeColumn
 
 
 class ModelService():

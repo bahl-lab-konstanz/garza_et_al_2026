@@ -1,5 +1,5 @@
 from abc import ABC
-from palette import Palette
+from utils.palette import Palette
 
 
 class Style(ABC):
