@@ -1,7 +1,7 @@
 import copy
 
-from analysis.personal_dirs.Roberto.style import Style
-from analysis.personal_dirs.Roberto.utils.palette import Palette
+from utils.palette import Palette
+from utils.style_template import Style
 
 
 class BehavioralModelStyle(Style):
