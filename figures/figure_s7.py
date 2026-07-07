@@ -1,9 +1,16 @@
-# Overview:
-# This script compares parameter correlations between synthetic DDM model fits
-# (control and sampling variants) and real experimental zebrafish model fits.
-# It bootstraps parameter samples to estimate correlation matrices and their
-# variability, computes p-values for deviations from baseline, and creates
-# multi-panel figures showing correlation structure and trajectories.
+"""
+Overview:
+This script compares parameter correlations between synthetic DDM model fits
+(control and sampling variants) and real experimental zebrafish model fits.
+It bootstraps parameter samples to estimate correlation matrices and their
+variability, computes p-values for deviations from baseline, and creates
+multi-panel figures showing correlation structure and trajectories.
+
+This plot expands on Extended Data Figure 7 shown in Garza et al 2026, by
+providing further visualization of Pearson correlation, matrices of p-values
+related to the bootstrap statistical test, and the different correlation values
+across ages and mutations.
+"""
 
 import itertools
 
@@ -36,7 +43,6 @@ high_corr_threshold = 0.5      # Threshold used when marking "high" correlations
 corr_threshold = 0.6
 no_corr_threshold = 0.3
 p_value_threshold = 0.01       # Significance threshold for p-values
-cohens_d_threshold = 1
 
 # configurations figure (styling and sizes pulled from BehavioralModelStyle)
 style = BehavioralModelStyle()

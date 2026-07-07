@@ -402,4 +402,4 @@ plot_dt_compare.draw_line(dt_array, loss_mean_array, lc="k", lw=1)
 # --------------------------------------------------------------------------
 # Save final figure
 # --------------------------------------------------------------------------
-fig.save(path_save / "figure_s1_compare_dt.pdf", open_file=False, tight=style.page_tight)
+fig.save(path_save / "figure_s2_compare_dt.pdf", open_file=False, tight=style.page_tight)

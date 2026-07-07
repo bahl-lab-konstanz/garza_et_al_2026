@@ -277,4 +277,4 @@ if show_coherence_vs_interbout_interval:
 # --------------------------------------------------------------------------
 # Save final figure
 # --------------------------------------------------------------------------
-fig.save(path_save / "figure_s1_loss_validation.pdf", open_file=False, tight=style.page_tight)
+fig.save(path_save / "figure_s2_loss_validation.pdf", open_file=False, tight=style.page_tight)

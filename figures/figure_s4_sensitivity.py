@@ -335,4 +335,4 @@ for i_p, p in enumerate(ConfigurationDDM.parameter_list):
 # Save final figure
 # -----------------------------------------------------------------------------
 if save_result:
-    fig.save(path_save / "figure_s3_sensitivity.pdf", open_file=False, tight=style.page_tight)
+    fig.save(path_save / "figure_s4_sensitivity.pdf", open_file=False, tight=style.page_tight)

@@ -3,11 +3,11 @@ from pathlib import Path
 import pandas as pd
 from dotenv import dotenv_values
 
-from all_stimuli.Panos.dot_motion_stimuli_versions.utils.stimulus_parameter import StimulusParameterLabel
 from figures.style import BehavioralModelStyle
 from service.behavioral_processing import BehavioralProcessing
 from service.figure_helper import Figure
 from utils.configuration_experiment import ConfigurationExperiment
+from utils.constants import StimulusParameterLabel
 
 # =====================================================================
 # Load environment variables (data and save paths)
@@ -28,9 +28,9 @@ ypos_start = style.ypos_start
 xpos = xpos_start
 ypos = ypos_start
 
-plot_height = style.plot_height
+plot_height = style.plot_height * 1.5
 plot_height_small = plot_height / 2.5
-plot_width = style.plot_width * 3/2
+plot_width = style.plot_width * 1.5
 
 padding = style.padding
 padding_plot = style.padding_in_plot
