@@ -1,6 +1,9 @@
 """
-Stationarity analysis of behavioral performance across coherence levels and time.
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 1a-b
 
+Overview:
+Stationarity analysis of behavioral performance across coherence levels and time.
 This script loads bout-level behavioral data from 5 dpf wild-type zebrafish larvae
 (base_dataset_5dpfWT) and compares accuracy (percentage correct) and interbout
 interval (IBI) across stimulus coherence levels, split into two 60-minute time
@@ -30,18 +33,18 @@ from utils.configuration_experiment import ConfigurationExperiment
 from utils.constants import StimulusParameterLabel
 
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Load environment variables
-# =====================================================================
+# --------------------------------------------------------------------------
 env_path = Path(__file__).parent.parent / ".env"
 env = dotenv_values(env_path)
 path_dir = Path(env["PATH_DIR"])
 path_data = path_dir / "base_dataset_5dpfWT" / "data_fish_all.hdf5"
 path_save = Path(env["PATH_SAVE"])
 
-# =============================================================================
+# --------------------------------------------------------------------------
 # Plot style and layout configuration
-# =============================================================================
+# --------------------------------------------------------------------------
 style = BehavioralModelStyle()
 xpos = style.xpos_start
 ypos = style.ypos_start
@@ -49,9 +52,9 @@ plot_height = style.plot_height * 1.5
 plot_width = style.plot_width * 1.5
 padding = style.padding
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Data plotting configuration
-# =====================================================================
+# --------------------------------------------------------------------------
 time_bin_list = [
     {"label": "start",
      "offset": 0,      # seconds
@@ -64,20 +67,20 @@ time_bin_list = [
 ]
 coherence_list = ConfigurationExperiment.coherence_list
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Initialize main figure container
-# =====================================================================
+# --------------------------------------------------------------------------
 fig = Figure()
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Load data and filter
-# =====================================================================
+# --------------------------------------------------------------------------
 df = pd.read_hdf(path_data)
 df = df.loc[df[ConfigurationExperiment.CorrectBoutColumn] != -1]
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Initialize figure panels
-# =====================================================================
+# --------------------------------------------------------------------------
 plot_accuracy = fig.create_plot(
                 plot_label=style.get_plot_label(), xl=ConfigurationExperiment.coherence_label,
                 yl="Percentage correct (%)",
@@ -92,9 +95,9 @@ plot_ibi = fig.create_plot(
                 xmin=-10, xmax=110, xticks=coherence_list, ymin=0, ymax=5,
                 yticks=[0, 2.5, 5])
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Computation of percentage correct and IBI by time bin
-# =====================================================================
+# --------------------------------------------------------------------------
 fish_dict = {}
 max_ibi = 0
 min_ibi = 100
@@ -134,9 +137,9 @@ for i_tb, tb in enumerate(time_bin_list):
             label = "60-120min"
             pt="D"
 
-        # =====================================================================
+        # --------------------------------------------------------------------------
         # Plot
-        # =====================================================================
+        # --------------------------------------------------------------------------
         plot_accuracy.draw_scatter(x, np.array(df_tb_coh_meanfish[ConfigurationExperiment.CorrectBoutColumn])*100,
                                    pc=color, ec=color, alpha=0.3, pt=pt)
         plot_accuracy.draw_scatter(x[0], np.mean(df_tb_coh_meanfish[ConfigurationExperiment.CorrectBoutColumn])*100,
@@ -146,9 +149,9 @@ for i_tb, tb in enumerate(time_bin_list):
         plot_ibi.draw_scatter(x[0], np.mean(df_tb_coh_meanfish[ConfigurationExperiment.ResponseTimeColumn]),
                                    pc="k", ec="k", label="Fish mean" if i_tb == len(time_bin_list)-1 and i_coh == 0 else None)
 
-# =====================================================================
+# --------------------------------------------------------------------------
 # Statistical test between pairs of coh for each time bin
-# =====================================================================
+# --------------------------------------------------------------------------
 pval_threshold = 0.05
 for i_tb in range(len(time_bin_list)):
     for i_coh in range(len(coherence_list)-1):
@@ -182,9 +185,9 @@ for i_tb in range(len(time_bin_list)):
         # Log
         print(f"Wilcoxon IBI | tb={i_tb} | coh={coherence_list[i_coh]}-{coherence_list[i_coh+1]} | pval={res_ibi.pvalue}")
 
-# =============================================================================
+# --------------------------------------------------------------------------
 # Save final figure
-# =============================================================================
+# --------------------------------------------------------------------------
 fig.save(path_save / "figure_s1_stationarity.pdf", open_file=True, tight=style.page_tight)
 
         

@@ -1,4 +1,7 @@
 """
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 7
+
 Overview:
 This script compares parameter correlations between synthetic DDM model fits
 (control and sampling variants) and real experimental zebrafish model fits.
@@ -21,12 +24,14 @@ from pathlib import Path
 from dotenv import dotenv_values
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
 from figures.style import BehavioralModelStyle
 from service.behavioral_processing import BehavioralProcessing
 from service.figure_helper import Figure
 from utils.configuration_ddm import ConfigurationDDM
 
+# ------------------------------------------------------------
+# Load env and paths
+# ------------------------------------------------------------
 # Load environment variables with input/output paths
 env = dotenv_values()
 path_dir = Path(env['PATH_DIR'])     # Input data directory
@@ -36,7 +41,9 @@ path_save = Path(env['PATH_SAVE'])   # Output directory for figures
 path_data_control = Path(fr"{path_dir}/benchmark/base_dataset")
 path_data_fish = Path(fr"{path_dir}/base_dataset")
 
-# configuration analysis
+# ------------------------------------------------------------
+# Configuration analysis
+# ------------------------------------------------------------
 number_bootstraps = int(1e4)   # Number of bootstrap iterations
 sample_percentage_size = 1     # Fraction of samples used in each bootstrap
 high_corr_threshold = 0.5      # Threshold used when marking "high" correlations
@@ -44,7 +51,9 @@ corr_threshold = 0.6
 no_corr_threshold = 0.3
 p_value_threshold = 0.01       # Significance threshold for p-values
 
-# configurations figure (styling and sizes pulled from BehavioralModelStyle)
+# ------------------------------------------------------------
+# Configurations figure
+# ------------------------------------------------------------
 style = BehavioralModelStyle()
 
 # Starting positions for placing plots on the figure grid
@@ -71,14 +80,26 @@ show_parameter_space = True
 show_correlation_matrices = True
 show_trajectory_correlation = False
 
-# Make a standard figure (container for all subplots)
+# ------------------------------------------------------------
+# Make a standard figure
+# ------------------------------------------------------------
 fig = Figure()
 
+
+# ----------------------------------------------------------------------------
+# SECTION 1: BASIC COMPUTATION
+# Loads synthetic (control/sampling) and real fish DDM parameter fits,
+# builds bootstrap distributions of their correlation matrices, and derives
+# p-values / Cohen's d effect sizes comparing fish vs. synthetic-control data.
+# ----------------------------------------------------------------------------
 if do_basic_computation:
     ##### correlation matrices
     # control synthetic datasets
     model_dict = {}
     model_dict_nofit = {}
+    # Two dicts collect synthetic-control model files found in the benchmark folder:
+    # model_dict holds files whose name ends in 'fit.hdf5' (already fitted results);
+    # model_dict_nofit holds the raw (non-fit) sampling files.
     # Iterate files in synthetic control directory and separate fitted vs not-fitted files
     for model_filepath in path_data_control.glob('model_test_*.hdf5'):
         model_filename = str(model_filepath.name)
@@ -87,12 +108,16 @@ if do_basic_computation:
         else:
             model_dict_nofit[model_filename.split("_")[2]] = {"data": model_filepath}
 
+    # --- 'Sampling' synthetic dataset (no explicit optimization fit) ---
+    # For each raw sampling file, the best (lowest-score) row is kept as that model's parameter set.
     # sampling (synthetic data without explicit fit results — take best-scoring record)
     model_array_sampling = np.zeros((len(ConfigurationDDM.parameter_list), len(model_dict_nofit.keys())))
     model_dict_sampling = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
     model_dict_sampling["id"] = []
     i_m = 0
     # For each no-fit synthetic model, read the table and select the best-scoring row
+    # Loop over every no-fit synthetic model: load its result table, keep the best-scoring row,
+    # and store each DDM parameter value plus the model's ID.
     for i_model, id_model in enumerate(model_dict_nofit.keys()):
         df_model_fit_list = pd.read_hdf(model_dict_nofit[id_model]["data"])
         best_score = np.min(df_model_fit_list['score'])
@@ -103,12 +128,15 @@ if do_basic_computation:
         model_dict_sampling["id"].append(id_model)
         i_m += 1
 
+    # --- 'Control' synthetic dataset (already-fitted models) ---
+    # Same best-score selection logic as above, but applied to the pre-fitted synthetic files.
     # fit synthetic fish (models that have explicit fit results)
     model_array_control = np.zeros((len(ConfigurationDDM.parameter_list), len(model_dict.keys())))
     model_dict_control = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
     model_dict_control["id"] = []
     i_m = 0
     # For each fitted synthetic model, pick the best-scoring fit and extract parameters
+    # Loop over every fitted synthetic model, extract best-scoring parameter row.
     for i_model, id_model in enumerate(model_dict.keys()):
         df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
         best_score = np.min(df_model_fit_list['score'])
@@ -118,8 +146,11 @@ if do_basic_computation:
             model_dict_control[p["label"]].append(df_model_fit[p["label"]][0])
         model_dict_control["id"].append(id_model)
         i_m += 1
+    # Keep a transposed list-of-arrays copy of the control parameter matrix (one row per model) for potential downstream use.
     theta_fish_control_list = list(model_array_control.T)
 
+    # --- Real (experimental) zebrafish dataset ---
+    # Collect fitted model files from the main experimental data directory.
     # real fish — load fitted models from experimental dataset directory
     model_dict = {}
     for model_filepath in path_data_fish.glob('model_*_fit.hdf5'):
@@ -132,6 +163,7 @@ if do_basic_computation:
     model_dict_fish["id"] = []
     i_m = 0
     # Extract best fit parameters for each real fish model
+    # Loop over every real-fish fitted model, extract the best-scoring parameter row (same pattern as above).
     for i_model, id_model in enumerate(model_dict.keys()):
         df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
         best_score = np.min(df_model_fit_list['score'])
@@ -142,6 +174,10 @@ if do_basic_computation:
         model_dict_fish["id"].append(id_model)
         i_m += 1
 
+    # --- Build indexed DataFrames and bootstrap-resample each dataset ---
+    # Each DataFrame is indexed by model/animal ID so that identity is preserved across resamples.
+    # 'randomly_sample_df' draws 'number_bootstraps' resampled copies (with replacement) of the DataFrame,
+    # used later to build an empirical distribution of the correlation matrix.
     # Prepare DataFrames for bootstrap resampling and create storage tensors
     df_model_sampling_original = pd.DataFrame(model_dict_sampling)
     df_model_sampling_original.set_index('id', inplace=True)  # set the Animal_ID as index to "preserve identity"
@@ -167,9 +203,13 @@ if do_basic_computation:
                                                                  with_replacement=True)
     relation_tensor_fish = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
 
+    # --- Baseline (observed) difference in correlation structure: sampling vs. control synthetic data ---
+    # This 'delta' will be compared against the null-distribution deltas below to compute a p-value.
     # Compute baseline differences between sampling and control correlations (absolute difference)
     delta_corr_synthetic = np.abs(
         np.array(df_model_control_original.corr()) - np.array(df_model_sampling_original.corr()))
+    # Pool sampling+control data together and draw two independent sets of bootstrap resamples;
+    # differences between these two random draws approximate the null distribution of 'no real difference'.
     # Combine synthetic sampling and control to compute null distributions via resampling
     df_model_synthetic_combined_original = pd.concat((df_model_sampling_original, df_model_control_original))
     df_model_synthetic_combined_list_0 = BehavioralProcessing.randomly_sample_df(
@@ -184,10 +224,12 @@ if do_basic_computation:
         with_replacement=True)
     relation_tensor_synthetic_combined_delta = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
 
+    # --- Same baseline-difference logic, but for real fish vs. control synthetic data ---
     # Control correlation used as baseline for fish comparison
     relation_fish_original = np.array(df_model_fish_original.corr())
     relation_control_original = np.array(df_model_control_original.corr())
     delta_corr_fish = np.abs(np.array(df_model_fish_original.corr()) - relation_control_original)
+    # Pool fish+control data together and draw two independent bootstrap resample sets for the null distribution.
     # Combined fish+control resampling for null distributions
     df_model_fish_combined_original = pd.concat((df_model_fish_original, df_model_control_original))
     df_model_fish_combined_list_0 = BehavioralProcessing.randomly_sample_df(df=df_model_fish_combined_original,
@@ -200,6 +242,9 @@ if do_basic_computation:
                                                                             with_replacement=True)
     relation_tensor_fish_combined_delta = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
 
+    # --- Main bootstrap loop ---
+    # For every bootstrap draw, compute the Pearson correlation matrix of each resampled dataset,
+    # and the null-distribution correlation deltas (difference between two independently resampled combined sets).
     # For each bootstrap iteration, compute correlation matrices for sampled datasets
     for i_df in range(number_bootstraps):
         df_model_sampling = df_model_sampling_list[i_df]
@@ -226,14 +271,21 @@ if do_basic_computation:
         corr_fish_combined_1 = np.array(df_model_fish_combined_1.corr())
         relation_tensor_fish_combined_delta[i_df] = np.abs(corr_fish_combined_0 - corr_fish_combined_1)
 
+    # --- Convert bootstrap distributions into p-values and summary statistics ---
+    # p-value = fraction of null-distribution deltas that are as extreme or more extreme than the observed delta.
+    # Values on/above the diagonal (upper triangle, including diagonal) are set to 1 (not tested / not meaningful).
     # check statistical difference of biology from baseline of the model
     p_value_synthetic = np.mean(relation_tensor_synthetic_combined_delta >= delta_corr_synthetic, axis=0)
+    # Boolean mask flagging which parameter-pairs show an 'acceptable' (non-significant) difference
+    # between the two synthetic variants — used later to gate which trajectory results are considered valid.
     p_value_corr_acceptable = p_value_synthetic > p_value_threshold
     p_value_synthetic[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 1
 
     p_value_fish = np.mean(relation_tensor_fish_combined_delta >= delta_corr_fish, axis=0)
     p_value_fish[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 1
 
+    # Average correlation matrices across all bootstrap draws (element-wise mean), and zero out the
+    # upper triangle (including diagonal) since correlation matrices are symmetric and the diagonal is trivially 1.
     relation_matrix_sampling = np.mean(relation_tensor_sampling, axis=0)
     relation_matrix_sampling[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 0
     relation_matrix_sampling_std = np.std(relation_tensor_control, axis=0)
@@ -246,16 +298,25 @@ if do_basic_computation:
     relation_matrix_fish[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 0
     relation_matrix_fish_std = np.std(relation_tensor_fish, axis=0)
 
+    # --- Effect size (Cohen's d) between fish and control correlation matrices ---
+    # Pooled standard deviation across bootstrap draws (identity matrix added to avoid divide-by-zero on the diagonal).
+    # Cells failing the significance threshold are masked out (set to NaN) so only significant differences are shown.
     pooled_std = np.eye(relation_matrix_fish_std.shape[0]) + np.sqrt((relation_matrix_fish_std**2 + relation_matrix_control_std**2) / 2)
     cohens_d_matrix = (relation_matrix_fish - relation_matrix_control) / pooled_std
     cohens_d_matrix[np.where(p_value_fish > p_value_threshold)] = np.nan
 
+    # --- Effect size (Cohen's d) between sampling and control synthetic correlation matrices (same logic as above) ---
     pooled_std_control = np.eye(relation_matrix_sampling.shape[0]) + np.sqrt((relation_matrix_sampling_std**2 + relation_matrix_control_std**2) / 2)
     cohens_d_matrix_control = (relation_matrix_sampling - relation_matrix_control) / pooled_std_control
     cohens_d_matrix_control[np.where(p_value_synthetic > p_value_threshold)] = np.nan
 
+# ----------------------------------------------------------------------------
+# SECTION 2: PARAMETER-SPACE SCATTERPLOTS
+# For every pair of DDM parameters, draw a scatterplot of real fish parameter
+# values (one point per fish) to visualize the raw parameter-space structure.
+# ----------------------------------------------------------------------------
 if show_parameter_space:
-    ##### scatterplots in parameter space
+    # scatterplots in parameter space
     model_dict = {}
     for model_filepath in path_data_fish.glob('model_*_fit.hdf5'):
         model_filename = str(model_filepath.name)
@@ -263,6 +324,7 @@ if show_parameter_space:
 
     model_array = np.zeros((len(ConfigurationDDM.parameter_list), len(model_dict.keys())))
     i_m = 0
+    # Extract best-fit parameter values for every real fish model (same best-score logic as Section 1).
     for i_model, id_model in enumerate(model_dict.keys()):
         df_model_fit_list = pd.read_hdf(model_dict[id_model]["fit"])
         best_score = np.min(df_model_fit_list['score'])
@@ -271,6 +333,8 @@ if show_parameter_space:
             model_array[i_p, i_m] = df_model_fit[p["label"]].iloc[0]
         i_m += 1
 
+    # Nested loop building a full grid of scatterplots: rows = one parameter (y-axis),
+    # columns = another parameter (x-axis), covering all pairwise combinations.
     for i_y, parameter_y in enumerate(ConfigurationDDM.parameter_list):
         for i_x, parameter_x in enumerate(ConfigurationDDM.parameter_list):
             y_p = model_array[i_y, :]
@@ -288,18 +352,28 @@ if show_parameter_space:
                                       hlines=[0], vlines=[0])
             xpos += padding + plot_width
 
+            # Draw the scatter of fish values for this parameter pair (elw=0 removes marker edge line width).
             plot_xy.draw_scatter(x_p, y_p, elw=0, alpha=0.5)
 
+        # Move to the next row of the grid after finishing a row of columns.
         xpos = xpos_start
         ypos -= padding + plot_height
+    # Extra vertical gap after the full scatterplot grid before the next section starts.
     ypos -= padding + plot_height
 
+# ----------------------------------------------------------------------------
+# SECTION 3: CORRELATION MATRICES AND P-VALUE / EFFECT-SIZE HEATMAPS
+# Plots side-by-side heatmaps of the correlation matrices (sampling synthetic,
+# fit synthetic/control, real fish), their p-value matrices, and Cohen's d
+# effect-size matrices, followed by per-age and per-genotype Cohen's d panels.
+# ----------------------------------------------------------------------------
 if show_correlation_matrices:
     # configuration this plot
     plot_width_matrix = plot_width * 1.6
     plot_size_matrix = plot_width * 1.7
 
     # correlation matrices
+    # --- Heatmap 1: correlation matrix of the sampling synthetic dataset ---
     plot_sampling = fig.create_plot(plot_label=style.get_plot_label(),
                                     plot_title="Correlation matrix\nsampling synthetic",
                                     xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
@@ -313,6 +387,7 @@ if show_correlation_matrices:
                                                  reversed(ConfigurationDDM.parameter_list)], )
     xpos += padding + plot_size_matrix
 
+    # Build coordinate grids (x, y) matching matrix indices; used implicitly by draw_image for pixel placement.
     x_ = np.arange(len(ConfigurationDDM.parameter_list))
     x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
     y = x.T
@@ -320,6 +395,7 @@ if show_correlation_matrices:
                                                              len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                                   colormap='seismic', zmin=-1, zmax=1, image_interpolation=None)
 
+    # --- Heatmap 2: correlation matrix of the fitted ('control') synthetic dataset ---
     plot_control = fig.create_plot(plot_title="Correlation matrix\nfit synthetic",
                                    xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                    plot_width=plot_size_matrix,
@@ -339,6 +415,7 @@ if show_correlation_matrices:
                                                            len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                                  colormap='seismic', zmin=-1, zmax=1, image_interpolation=None)
 
+    # --- Heatmap 3: correlation matrix of the real experimental fish dataset, with colorbar ---
     plot_fish = fig.create_plot(plot_title="Correlation matrix\nexperiment",
                                 xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                 plot_width=plot_size_matrix,
@@ -356,12 +433,14 @@ if show_correlation_matrices:
                                                      len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                               colormap='seismic', zmin=-1, zmax=1, image_interpolation=None)
 
+    # Attach a slim colorbar axis to the right of the fish correlation heatmap.
     divider = make_axes_locatable(plot_fish.ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plot_fish.figure.fig.colorbar(im, cax=cax, orientation='vertical',
                                   ticks=[-1, -corr_threshold, 0, corr_threshold, 1])
 
     # matrices of p-values
+    # --- Heatmap 4: p-value matrix testing sampling-vs-control synthetic correlation differences ---
     plot_fit = fig.create_plot(plot_title="p-value\ncorrelation fit",
                                xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                plot_width=plot_size_matrix,
@@ -381,6 +460,7 @@ if show_correlation_matrices:
                                                  len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                              colormap='gray', zmin=0, zmax=0.1, image_interpolation=None)
 
+    # --- Heatmap 5: p-value matrix testing fish-vs-control correlation differences (the 'corrected'/biological comparison), with colorbar ---
     plot_corrected = fig.create_plot(plot_title="p-value\ncorrelation corrected",
                                      xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                      plot_width=plot_size_matrix,
@@ -399,10 +479,12 @@ if show_correlation_matrices:
                                                   len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                                    colormap='gray', zmin=0, zmax=0.1, image_interpolation=None)
 
+    # Attach colorbar to the p-value heatmap, with ticks at common significance thresholds.
     divider = make_axes_locatable(plot_corrected.ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plot_corrected.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[0, 0.01, 0.05, 0.1])
 
+    # --- Heatmap 6: Cohen's d effect size for sampling-vs-control synthetic correlations (masked by significance), with colorbar ---
     plot_cohens_d_control = fig.create_plot(plot_title="Cohen's d Fit",
                                     xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                     plot_width=plot_size_matrix,
@@ -421,12 +503,17 @@ if show_correlation_matrices:
                                                     len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                                   colormap='PRGn', zmin=-1, zmax=1, image_interpolation=None)
 
+    # Attach colorbar to the Cohen's d heatmap, ticks spanning the -1 to 1 effect-size range.
     divider = make_axes_locatable(plot_cohens_d_control.ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plot_cohens_d_control.figure.fig.colorbar(im, cax=cax, orientation='vertical', ticks=[-1, -0.5, 0, 0.5, 1])
 
+    # Reset plotting cursor to a new row for the upcoming per-group (age/genotype) Cohen's d panels.
     xpos = xpos_start
     ypos -= padding * 2 + plot_size_matrix
+    # List of experimental subgroups to compare against the synthetic control baseline:
+    # 5 developmental ages (5-9 days post-fertilization) followed by scn1lab and disc1 genotype groups
+    # (two independent scn1lab clutches, plus disc1 wild-type/heterozygous/homozygous mutants).
     models_in_age_list = [
         {"label_show": "5dpf",
          "path": fr"{path_dir}/age_analysis/5_dpf", },
@@ -438,14 +525,31 @@ if show_correlation_matrices:
          "path": fr"{path_dir}/age_analysis/8_dpf", },
         {"label_show": "9dpf",
          "path": fr"{path_dir}/age_analysis/9_dpf", },
+        {"label_show": "1 scn1lab+/+",
+         "path": fr"{path_dir}/genome_analysis/scn1lab_NIBR_20200708/wt", },
+        {"label_show": "1 scn1lab+/-",
+         "path": fr"{path_dir}/genome_analysis/scn1lab_NIBR_20200708/het", },
+        {"label_show": "2 scn1lab+/+",
+         "path": fr"{path_dir}/genome_analysis/scn1lab_zirc_20200710/wt", },
+        {"label_show": "2 scn1lab+/-",
+         "path": fr"{path_dir}/genome_analysis/scn1lab_zirc_20200710/het", },
+        {"label_show": "disc+/+",
+         "path": fr"{path_dir}/genome_analysis/disc1_hetnix/wt", },
+        {"label_show": "disc+/-",
+         "path": fr"{path_dir}/genome_analysis/disc1_hetnix/het", },
+        {"label_show": "disc-/-",
+         "path": fr"{path_dir}/genome_analysis/disc1_hetnix/hom", },
     ]
+    # Accumulator for each group's Cohen's d matrix (kept for potential later inspection/reuse).
     cohens_d_matrix_age_traj = []
+    # --- For each subgroup (age or genotype), repeat the bootstrap correlation & Cohen's d pipeline from Section 1 ---
     for i_m, m in enumerate(models_in_age_list):
         path = m["path"]
         i_m_ = 0
         model_list = [[] for i_p in range(len(ConfigurationDDM.parameter_list))]
         model_dict_group = {p["label"]: [] for p in ConfigurationDDM.parameter_list}
         model_dict_group["id"] = []
+        # Load every fitted model file for this subgroup and keep the best-scoring parameter row per animal.
         for model_filepath in Path(path).glob('model_*_fit.hdf5'):
             model_filename = str(model_filepath.name)
             df_model_fit_list = pd.read_hdf(model_filepath)
@@ -458,6 +562,7 @@ if show_correlation_matrices:
             model_dict_group["id"].append(model_filename.split("_")[2])
             i_m_ += 1
 
+        # Build indexed DataFrame for this subgroup and bootstrap-resample it (same logic as Section 1).
         model_array = np.array(model_list)
         df_model_group_original = pd.DataFrame(model_dict_group)
         df_model_group_original.set_index('id', inplace=True)
@@ -469,14 +574,18 @@ if show_correlation_matrices:
             with_replacement=True
         )
         relation_tensor_group = np.zeros((number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
+        # Compute correlation matrix for each bootstrap resample of this subgroup.
         for i_df in range(number_bootstraps):
             df_model_group = df_model_group_list[i_df]
             relation_tensor_group[i_df] = np.array(df_model_group[[p["label"] for p in ConfigurationDDM.parameter_list]].corr())
 
+        # Mean and std of the subgroup's bootstrap correlation matrices (upper triangle zeroed as before).
         relation_matrix_group = np.mean(relation_tensor_group, axis=0)
         relation_matrix_group[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 0
         relation_matrix_group_std = np.std(relation_tensor_group, axis=0)
 
+        # Recompute the group's true (non-bootstrap) correlation matrix and its absolute difference from control,
+        # then build the same combined-resample null distribution as in Section 1 to get a p-value for this subgroup.
         # Control correlation used as baseline for fish comparison
         relation_group_original = np.array(df_model_group_original.corr())
         relation_control_original = np.array(df_model_control_original.corr())
@@ -494,6 +603,7 @@ if show_correlation_matrices:
         relation_tensor_group_combined_delta = np.zeros(
             (number_bootstraps, len(ConfigurationDDM.parameter_list), len(ConfigurationDDM.parameter_list)))
 
+        # Bootstrap loop: correlation deltas between two independent resamples of the combined group+control data.
         # For each bootstrap iteration, compute correlation matrices for sampled datasets
         for i_df in range(number_bootstraps):
             df_model_group_combined_0 = df_model_group_combined_list_0[i_df]
@@ -502,9 +612,12 @@ if show_correlation_matrices:
             corr_group_combined_1 = np.array(df_model_group_combined_1.corr())
             relation_tensor_group_combined_delta[i_df] = np.abs(corr_group_combined_0 - corr_group_combined_1)
 
+        # p-value for this subgroup's correlation vs. control, with upper-triangle cells set to 1 (untested).
         p_value_group = np.mean(relation_tensor_group_combined_delta >= delta_corr_group, axis=0)
         p_value_group[np.triu_indices(len(ConfigurationDDM.parameter_list))] = 1
 
+        # Cohen's d effect size for this subgroup vs. control; mask out cells that are not significant either
+        # for this specific comparison (p_value_group) or for the earlier sampling-vs-control reference test (p_value_corr_acceptable).
         pooled_std = np.eye(relation_matrix_group_std.shape[0]) + np.sqrt((relation_matrix_group_std ** 2 + relation_matrix_control_std ** 2) / 2)
         cohens_d_matrix_age = (relation_matrix_group - relation_matrix_control) / pooled_std
         cohens_d_matrix_age[np.where(p_value_group > p_value_threshold)] = np.nan
@@ -512,6 +625,7 @@ if show_correlation_matrices:
 
         cohens_d_matrix_age_traj.append(cohens_d_matrix_age)
 
+        # Create and draw this subgroup's Cohen's d heatmap panel, wrapping to a new row every 5 panels.
         plot_cohens_d = fig.create_plot(plot_title=f"Cohen's d {m['label_show']}",
                                          xpos=xpos, ypos=ypos, plot_height=plot_size_matrix,
                                          plot_width=plot_size_matrix,
@@ -522,6 +636,10 @@ if show_correlation_matrices:
                                                       ConfigurationDDM.parameter_list],
                                          ymin=-0.5, ymax=len(ConfigurationDDM.parameter_list) - 0.5)
         xpos += padding + plot_size_matrix
+        # Wrap to a new row of panels after every 5 groups plotted.
+        if i_m == 4:
+            xpos = xpos_start
+            ypos -= padding*2 + plot_size_matrix
 
         x_ = np.arange(len(ConfigurationDDM.parameter_list))
         x = np.tile(x_, (len(ConfigurationDDM.parameter_list), 1))
@@ -530,6 +648,7 @@ if show_correlation_matrices:
                                                       len(ConfigurationDDM.parameter_list) - 0.5, -0.5),
                                        colormap='PRGn', zmin=-1, zmax=1, image_interpolation=None)
 
+        # Attach a shared colorbar only once, after the very last subgroup panel has been drawn.
         if i_m == len(models_in_age_list)-1:
             divider = make_axes_locatable(plot_cohens_d.ax)
             cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -538,11 +657,18 @@ if show_correlation_matrices:
     xpos = xpos_start
     ypos -= padding * 2 + plot_size_matrix
 
+# ----------------------------------------------------------------------------
+# SECTION 4: PARAMETER-CORRELATION TRAJECTORIES (disabled by default)
+# Defines and calls a helper function that tracks how specific parameter-pair
+# correlations change across ordered groups (ages) or categorical groups
+# (genotypes), plotting one small trajectory subplot per parameter pair.
+# ----------------------------------------------------------------------------
 if show_trajectory_correlation:
     padding_here = style.plot_size
     xpos_start_here = xpos
     ypos_start_here = ypos
-    # ##### all datasets for which to compute parameters correlations
+    # all datasets for which to compute parameters correlations
+    # Ordered group list for the age trajectory (developmental stage in days post-fertilization).
     models_in_age_list = [
         {"label_show": "5dpf",
          "path": fr"{path_dir}/age_analysis/5_dpf", },
@@ -555,12 +681,14 @@ if show_trajectory_correlation:
         {"label_show": "9dpf",
          "path": fr"{path_dir}/age_analysis/9_dpf", },
     ]
+    # Group list for the scn1lab genotype trajectory (wild-type vs. heterozygous).
     models_in_mutation_scn_list = [
         {"label_show": "scn1lab +/+",
          "path": fr"{path_dir}/harpaz_2021/scn1lab_NIBR_20200708/wt", },
         {"label_show": "scn1lab +/-",
          "path": fr"{path_dir}/harpaz_2021/scn1lab_NIBR_20200708/het", },
     ]
+    # Group list for the disc1 genotype trajectory (wild-type / heterozygous / homozygous).
     models_in_mutation_disc_list = [
         {"label_show": "disc1 +/+",
          "path": fr"{path_dir}/harpaz_2021/disc1_hetnix/wt", },
@@ -571,6 +699,9 @@ if show_trajectory_correlation:
     ]
 
 
+    # Local helper function (defined here, not module-level) that performs the full bootstrap +
+    # significance pipeline for an arbitrary list of model groups, then draws one subplot per
+    # parameter pair showing how the mean correlation (with error bars) evolves across the groups.
     def show_trajectory_correlation(models_list, fig, xpos_start_here, ypos_start_here, xl=None, xticklabels=None,
                                     plot_width_here=plot_width_small, xticklabels_rotation=None,
                                     show_title=False, show_scalebar=False, show_ticks=False,
@@ -704,6 +835,8 @@ if show_trajectory_correlation:
             p_value_group = np.mean(relation_tensor_group_combined_delta >= corr_delta_group, axis=0)
 
             # Store statistics for this model group
+            # Store this group's mean, std, and 25th/75th-percentile correlation values, plus its p-value vs. control,
+            # at index i_m of the trajectory arrays (one slot per group in the ordered/categorical list).
             parameter_corr_trajectory[i_m, :, :] = np.nanmean(relation_tensor_group, axis=0)
             parameter_corr_trajectory_std[i_m, :, :] = np.nanstd(relation_tensor_group, axis=0)
             parameter_corr_trajectory_q25[i_m, :, :] = np.nanquantile(relation_tensor_group, q=0.25, axis=0)
@@ -718,6 +851,7 @@ if show_trajectory_correlation:
         i_p1_old = 0
         not_shown_scalebar_yet = True
 
+        # Loop over every unique parameter pair and draw its trajectory subplot.
         for i_p1, i_p2 in combination_list:
             p1 = ConfigurationDDM.parameter_list[i_p1]
             p2 = ConfigurationDDM.parameter_list[i_p2]
@@ -762,6 +896,7 @@ if show_trajectory_correlation:
 
 
     # compute correlation for all the datasets analysed in the manuscript
+    # --- Run the trajectory function once per dataset grouping, placing each result set at a different x-offset ---
     xpos_start_here = xpos_start
     res_age = show_trajectory_correlation(models_in_age_list, fig, xpos_start_here, ypos_start_here, "Age (dpf)",
                                           ["5", "6", "7", "8", "9"], plot_width_small,

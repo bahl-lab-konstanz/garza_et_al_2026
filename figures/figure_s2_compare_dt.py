@@ -1,7 +1,9 @@
 """
-Overview: Compare behavioral model fits across different simulation time steps (dt)
--------------------------------------------------------------------------------
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 2d-e
 
+Overview:
+Compare behavioral model fits across different simulation time steps (dt)
 This script evaluates the influence of different time step values (dt) on
 behavioral model fits. It loads experimental and simulated fish data,
 computes response time distributions for correct and incorrect responses
@@ -49,7 +51,7 @@ path_save = Path(env['PATH_SAVE'])
 # --------------------------------------------------------------------------
 # Plot style parameters (layout, sizes, padding)
 # --------------------------------------------------------------------------
-style = BehavioralModelStyle()
+style = BehavioralModelStyle(plot_label_i=3)
 
 xpos_start = style.xpos_start
 ypos_start = style.ypos_start

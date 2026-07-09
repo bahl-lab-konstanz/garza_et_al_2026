@@ -1,3 +1,30 @@
+"""
+The present script produces the following figure panels in Garza et al 2026:
+- Fig. 1d-h
+
+Overview:
+This script generates a composite, multi-panel figure summarizing zebrafish
+larval optomotor behavior in response to motion coherence stimuli (5dpf wild-
+type cohort). It loads per-fish and pooled behavioral datasets and builds up
+to seven panels, each independently toggleable via boolean flags:
+
+1. Trial structure — stimulus time course and decision (swim) event timing
+   for an example fish, illustrating the experimental paradigm.
+2. Distribution of orientation-change angles per coherence level, showing how
+   swim turning behavior shifts with stimulus strength.
+3. (Optional) Example single-fish 2D swim trajectory within the circular
+   arena, color-coded by correct/incorrect responses.
+4. Psychometric curve — percentage of correct swims as a function of
+   coherence, plotted per fish (individual curves) and as a population mean.
+5. Coherence vs. interbout interval (IBI) — how swim latency/frequency
+   changes with stimulus coherence, per fish and as a population mean.
+6. Interbout interval distributions — per-fish, per-coherence histograms of
+   response times, split by correct (positive) and incorrect (mirrored,
+   negative) responses.
+
+All panels are assembled into a single figure object and exported as one PDF.
+"""
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -51,7 +78,6 @@ show_psychometric_curve = True
 show_coherence_vs_interbout_interval = True
 show_interbout_interval_vs_accuracy = False
 show_rt_distributions = True
-show_cv = False
 
 # =============================================================================
 # Experimental parameters and dataset loading
@@ -555,27 +581,6 @@ if show_rt_distributions:
         ypos = ypos - (padding_here + plot_height_small)
 
     xpos = xpos + i_param * (plot_width_here + padding_plot) + plot_width_here + padding
-
-# =============================================================================
-# Plot 7 — Coefficient of variation (accuracy & IBI)
-# =============================================================================
-if show_cv:
-    plot_cv = fig.create_plot(xpos=xpos, ypos=ypos,
-                              plot_height=plot_height,
-                              plot_width=plot_width,
-                              errorbar_area=True,
-                              xl=analysed_parameter_label,
-                              xmin=min(parameter_list), xmax=max(parameter_list),
-                              xticks=[int(p) for p in parameter_list],
-                              yl="Coefficient variation (%)",
-                              ymin=0, ymax=100,
-                              yticks=[0, 50, 100])
-    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_accuracy,
-                      lc="k", lw=1, line_dashes=(1, 2),
-                      label="Percentage correct swims (%)")
-    plot_cv.draw_line(x=parameter_list, y=coefficient_variation_ibi,
-                      lc="k", lw=1, line_dashes=(0.1, 3),
-                      label="Interbout interval (s)")
 
 # =============================================================================
 # Save final figure

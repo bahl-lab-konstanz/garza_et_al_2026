@@ -1,7 +1,9 @@
 """
-====================================================================
-Overview
-====================================================================
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Fig. 2c
+- Fig. 2e
+
+Overview:
 This script generates behavioral analysis figures from zebrafish
 decision-making experiments and model fitting.
 
@@ -16,8 +18,6 @@ Steps:
 - For repeatability analysis: load multiple fitting results,
   plot parameter evolution across iterations, and compare final values.
 - Save the final figure as a PDF.
-
-====================================================================
 """
 
 import pandas as pd
@@ -46,7 +46,7 @@ path_data = path_dir / 'base_dataset_5dpfWT'  # location of dataset files
 # ================================================================
 # Plot configuration (layout, sizes, padding, etc.)
 # ================================================================
-style = BehavioralModelStyle(plot_label_i=1)
+style = BehavioralModelStyle(plot_label_i=2)
 
 xpos_start = style.xpos_start
 ypos_start = style.ypos_start

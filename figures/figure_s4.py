@@ -1,6 +1,8 @@
 """
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 4a-h
+
 Overview:
----------
 This script performs a series of analyses and visualizations on behavioral model
 data, comparing synthetic and real datasets. It loads precomputed fitting results,
 evaluates model identifiability under varying noise conditions, and generates

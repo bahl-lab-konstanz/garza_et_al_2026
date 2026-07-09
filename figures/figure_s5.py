@@ -1,6 +1,9 @@
 """
-Script Overview
----------------
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 5
+
+
+Overview:
 This script generates behavioral analysis figures comparing experimental fish data
 to synthetic (model-generated) fish data. It processes raw datasets, computes
 statistics (e.g., accuracy over time, bout number vs. accuracy, reaction time

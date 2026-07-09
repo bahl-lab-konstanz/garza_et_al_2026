@@ -1,7 +1,9 @@
 """
-Overview: Validation of behavioral model loss and response characteristics
-------------------------------------------------------------------------
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 2a-c
 
+Overview:
+Validation of behavioral model loss and response characteristics
 This script validates behavioral model fitting by comparing experimental
 data with simulated data. It evaluates different loss formulations
 (e.g., KL divergence and its variants) and examines how models reproduce
@@ -45,7 +47,7 @@ path_save = pathlib.Path(env['PATH_SAVE'])
 # --------------------------------------------------------------------------
 # Plot style configuration
 # --------------------------------------------------------------------------
-style = BehavioralModelStyle(plot_label_i=1)
+style = BehavioralModelStyle()
 
 xpos_start = style.xpos_start
 ypos_start = style.ypos_start

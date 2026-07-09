@@ -1,3 +1,21 @@
+"""
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Fig. 4
+
+Overview:
+This script compares behavioral data and model fits across several age groups.
+Main actions:
+ - Load data and synthetic model outputs for each age group (5dpf..9dpf).
+ - Produce summary plots:
+     * Loss reduction per fitted model (show training progression)
+     * Psychometric curves (data vs. model)
+     * Interbout interval (IBI) as a function of coherence (data vs. model)
+     * Distributions of fitted DDM parameters across animals/models and statistical tests
+ - Uses utilities from analysis.utils.figure_helper for plotting.
+Notes:
+ - The code assumes environment variables PATH_DIR and PATH_SAVE are set (dotenv).
+"""
+
 import itertools
 
 import pandas as pd
@@ -14,22 +32,6 @@ from service.statistics_service import StatisticsService
 from utils.configuration_ddm import ConfigurationDDM
 from utils.configuration_experiment import ConfigurationExperiment
 from utils.constants import StimulusParameterLabel
-
-# =============================================================================
-# OVERVIEW
-# =============================================================================
-# This script compares behavioral data and model fits across several age groups.
-# Main actions:
-#  - Load data and synthetic model outputs for each age group (5dpf..9dpf).
-#  - Produce summary plots:
-#      * Loss reduction per fitted model (show training progression)
-#      * Psychometric curves (data vs. model)
-#      * Interbout interval (IBI) as a function of coherence (data vs. model)
-#      * Distributions of fitted DDM parameters across animals/models and statistical tests
-#  - Uses utilities from analysis.utils.figure_helper for plotting.
-# Notes:
-#  - The code assumes environment variables PATH_DIR and PATH_SAVE are set (dotenv).
-# =============================================================================
 
 # =============================================================================
 # Environment / paths

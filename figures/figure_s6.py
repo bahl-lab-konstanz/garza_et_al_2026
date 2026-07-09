@@ -1,6 +1,9 @@
 """
-Psychometric curve analysis for synthetic DDM models across stimulus coherence.
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 6
 
+Overview:
+Psychometric curve analysis for synthetic DDM models across stimulus coherence.
 This script generates (or loads) a synthetic behavioral dataset from DDM model
 simulations filtered by leak sign ("leakneg-all" vs "leakpos-all"), then plots
 the psychometric curve of accuracy (percentage correct swims) as a function of
@@ -55,7 +58,7 @@ select_dataset = {"sign": -1, "label": "leakneg-all"}  # ALTERNATIVE {"sign": 1,
 # =============================================================================
 # Plot style and layout configuration
 # =============================================================================
-style = BehavioralModelStyle(plot_label_i=4)
+style = BehavioralModelStyle()
 
 xpos_start = style.xpos_start
 ypos_start = style.ypos_start

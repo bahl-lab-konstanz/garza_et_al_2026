@@ -1,4 +1,7 @@
 """
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Fig. 3b-g
+
 Overview:
 This script generates and saves a multi-panel figure (figure_3.pdf) that summarizes behavioral model results
 from experimental fish datasets. It integrates raw experimental data, fitted model outputs, and statistical analyses
@@ -7,7 +10,8 @@ to visualize several aspects of fish decision-making behavior, including:
 1. **Loss reduction** during model training (convergence of optimization).
 2. **Psychometric curves** showing the percentage of correct responses as a function of stimulus coherence.
 3. **Coherence vs. interbout interval** relationships.
-4. **Reaction time (RT) distributions** for correct and incorrect responses across stimulus strengths.
+4. **Interbout interval distributions** for correct and incorrect responses across stimulus strengths.
+   (sometimes referred to as reaction time, or RT)
 5. **Individual parameter estimations** for each fish from fitted decision-making models.
 6. **Parameter distributions** across the fish population.
 

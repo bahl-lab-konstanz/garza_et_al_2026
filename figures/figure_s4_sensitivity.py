@@ -1,6 +1,8 @@
 """
-Overview
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 4i
 
+Overview:
 This script performs a **sensitivity analysis** on Drift Diffusion Model (DDM) parameters
 to quantify how perturbations of model parameters affect model fit to behavioral data.
 
@@ -60,7 +62,7 @@ path_data = path_dir / "base_dataset_5dpfWT"          # Dataset subdirectory
 # ------------------------------------------------------------
 # Plotting configurations
 # ------------------------------------------------------------
-style = BehavioralModelStyle()
+style = BehavioralModelStyle(plot_label_i=8)
 
 # Starting positions for plots on figure grid
 xpos_start = style.xpos_start

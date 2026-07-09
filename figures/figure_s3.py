@@ -1,6 +1,8 @@
 """
-Overview
----------------
+The present script produces the following figure (or figure panels) in Garza et al 2026:
+- Extended Data Fig. 3
+
+Overview:
 This script generates and saves a set of figures analyzing the behavior of Drift Diffusion Model (DDM) fitting
 and identifiability. It visualizes:
 
