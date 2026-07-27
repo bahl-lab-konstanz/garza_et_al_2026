@@ -1248,7 +1248,7 @@ class BehavioralProcessing():
 
     @staticmethod
     def compute_quantities_per_parameters_multiple_fish(df, column_name=CorrectBoutColumn,
-                                          analysed_parameter=StimulusParameterLabel.COHERENCE.value):
+                                          analysed_parameter=StimulusParameterLabel.COHERENCE.value, absolute_value=False):
         parameter_list = np.sort(df[analysed_parameter].unique())
 
         if column_name == CorrectBoutColumn:
@@ -1265,7 +1265,10 @@ class BehavioralProcessing():
                     window_value_groups = df_filtered.groupby("fish_ID")[column_name].mean()
                 except KeyError:
                     window_value_groups = df_filtered.groupby("folder_name")[column_name].mean()
-            correct_bout_list[i_p] = float(window_value_groups.mean())
+            if absolute_value:
+                correct_bout_list[i_p] = float(window_value_groups.abs().mean())
+            else:
+                correct_bout_list[i_p] = float(window_value_groups.mean())
             std_correct_bout_list[i_p] = window_value_groups.std()   # / len(window_value_groups) if len(window_value_groups) > 0 else window_value_groups.std()
 
         return parameter_list, correct_bout_list, std_correct_bout_list

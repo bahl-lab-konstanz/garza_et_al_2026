@@ -71,7 +71,7 @@ number_bins_hist = 15  # number of bins for histograms
 # ================================================================
 # Flags: toggle which plots are generated
 # ================================================================
-show_trajectory_decision_variable = False
+show_trajectory_decision_variable = True
 show_repeatability = True
 
 

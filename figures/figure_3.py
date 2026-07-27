@@ -610,4 +610,4 @@ if show_individual_estimations or show_distribution_parameters:
 # =====================================================================
 # Finalize and save figure
 # =====================================================================
-fig.save(path_save / "figure_3.pdf")
+fig.save(path_save / "figure_3.pdf", open_file=False, tight=style.page_tight)

@@ -581,4 +581,4 @@ if show_distribution_parameters:
 # =============================================================================
 # Save final figure
 # =============================================================================
-fig.save(path_save / f"figure_{figure_label}.pdf", open_file=False, tight=style.page_tight)
+fig.save(path_save / f"figure_5.pdf", open_file=False, tight=style.page_tight)

@@ -1,7 +1,7 @@
 # DDM Explorer (Garza et al. 2026)
 
 An interactive browser-based GUI for building intuition about the **Drift-Diffusion Model (DDM)** — a canonical computational model of perceptual decision-making. Parameters are tuned in real time via sliders, and four visualisation panels update immediately to reflect the simulation outcome.
-For the updated version of this application, please check [here](https://github.com/garza-roberto/ddm_gui). 
+For the up-to-date version of this application, please check [here](https://github.com/garza-roberto/ddm_gui). 
 
 ![image](demo_ddm_gui.png)
 

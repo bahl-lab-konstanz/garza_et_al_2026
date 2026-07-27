@@ -1,13 +1,14 @@
 """
 The present script produces the following figure (or figure panels) in Garza et al 2026:
-- Extended Data Fig. 6
+- Extended Data Fig. 6 (left or right)
 
 Overview:
-Psychometric curve analysis for synthetic DDM models across stimulus coherence.
+Psychometric curve for synthetic DDM models across stimulus coherence.
 This script generates (or loads) a synthetic behavioral dataset from DDM model
-simulations filtered by leak sign ("leakneg-all" vs "leakpos-all"), then plots
-the psychometric curve of accuracy (percentage correct swims) as a function of
-stimulus coherence, for individual synthetic fish and their population average.
+simulations filtered by leak sign ("leakneg-all" for negative or "leakpos-all"
+for positive), then plots the psychometric curve of accuracy (percentage correct
+swims) as a function of stimulus coherence, for individual synthetic fish and
+their population average.
 
 Workflow:
 1. Load environment paths and select dataset variant based on model leak sign
@@ -42,7 +43,7 @@ from utils.constants import StimulusParameterLabel
 # =============================================================================
 # Script configurations
 # =============================================================================
-save_dataset = False
+save_dataset = True
 show_psychometric_curve = True
 
 # =============================================================================
@@ -50,10 +51,10 @@ show_psychometric_curve = True
 # =============================================================================
 env_path = Path(__file__).parent.parent / ".env"
 env = dotenv_values(env_path)
-path_dir = Path(env['PATH_DIR'])
+path_dir = Path(env['PATH_DIR']) / "benchmark" / "base_dataset"
 path_save = Path(env['PATH_SAVE'])
 path_data = path_dir
-select_dataset = {"sign": -1, "label": "leakneg-all"}  # ALTERNATIVE {"sign": 1, "label": "leakpos-all"}
+select_dataset = {"sign": 1, "label": "leakpos-all"}  # ALTERNATIVE {"sign": -1, "label": "leakneg-all"}
 
 # =============================================================================
 # Plot style and layout configuration
@@ -87,7 +88,9 @@ query_time = f'start_time > {ConfigurationExperiment.time_start_stimulus} and en
 # =============================================================================
 # Load and/or save dataset
 # =============================================================================
-if save_dataset:
+try:
+    df = pd.read_hdf(path_data / f"data_synthetic_test_{select_dataset['label']}.hdf5")
+except FileNotFoundError:
     df_list = []
     for path_model in path_data.glob("model_test_*.hdf5"):
         if "fit" in path_model.name: continue
@@ -99,8 +102,7 @@ if save_dataset:
         df_list.append(pd.read_hdf(path_fish))
     df = pd.concat(df_list)
     df.to_hdf(str(path_save / f"data_synthetic_test_{select_dataset['label']}.hdf5"), key="all_events", complevel=9)
-else:
-    df = pd.read_hdf(path_data / f"data_synthetic_test_{select_dataset['label']}.hdf5")
+
 
 # =============================================================================
 # Initialize main figure container
@@ -110,6 +112,7 @@ fig = Figure()
 # =============================================================================
 # Computation and plotting
 # =============================================================================
+correct_bout_allfish_flip = {p: [] for p in ConfigurationExperiment.coherence_list}
 if show_psychometric_curve:
     plot_height = plot_height_row
     plot_width = 1
@@ -159,17 +162,22 @@ if show_psychometric_curve:
         if show_label:
             plot_0.draw_text(max(parameter_list_all) + 0.1, correct_bout_list[-1], f"fish {id}",
                              textlabel_rotation='horizontal', textlabel_ha='left')
+        for i_c in range(len(correct_bout_list)):
+            correct_bout_allfish_flip[ConfigurationExperiment.coherence_list[i_c]].append(50 + np.abs(correct_bout_list[i_c]-50))
 
     # Mean psychometric curve across fish
-    parameter_list, correct_bout_list, std_correct_bout_list = BehavioralProcessing.compute_quantities_per_parameters_multiple_fish(
-        df_filtered_all, analysed_parameter=coherence_label)
-    coefficient_variation_accuracy = std_correct_bout_list / correct_bout_list * 100
-    correct_bout_list *= 100
-    print(f"mean percentage_correct: {correct_bout_list}")
-    print(f"std percentage_correct: {std_correct_bout_list}")
+    correct_bout_list_mean = np.zeros_like(ConfigurationExperiment.coherence_list)
+    correct_bout_list_std = np.zeros_like(ConfigurationExperiment.coherence_list)
+    for i_c, c in enumerate(ConfigurationExperiment.coherence_list):
+        correct_bout_list_mean[i_c] = np.nanmean(correct_bout_allfish_flip[c])
+        correct_bout_list_std[i_c] = np.nanstd(correct_bout_allfish_flip[c])
+    coefficient_variation_accuracy = correct_bout_list_std / correct_bout_list_mean * 100
+
+    print(f"mean percentage_correct: {correct_bout_list_mean}")
+    print(f"std percentage_correct: {correct_bout_list_std}")
     print(f"CV percentage_correct: {coefficient_variation_accuracy}")
 
-    plot_0.draw_line(x=parameter_list, y=correct_bout_list, lc="k", lw=1, line_dashes=line_dashes)
+    plot_0.draw_line(x=ConfigurationExperiment.coherence_list, y=correct_bout_list_mean, lc="k", lw=1, line_dashes=line_dashes)
 
     ypos = ypos
     xpos = xpos + padding + plot_width

@@ -1,3 +1,15 @@
+'''
+Overview:
+Fits a DDMstable drift-diffusion model to experimental zebrafish bout
+data, using bootstrapped resampling and optionally multiple repeated
+fits per bootstrap. Can also regenerate a synthetic dataset from the
+fitted model, and saves fitted parameters, fitting-history logs, and
+synthetic data to HDF5.
+
+WARNING: this script is demanding on resources and time. With the current configuration
+is usually run on a single CPU in around 20 hours.
+'''
+
 import sys
 from datetime import datetime
 import numpy as np
@@ -14,19 +26,10 @@ from utils.configuration_experiment import ConfigurationExperiment
 from utils.constants import StimulusParameterLabel, Direction
 
 if __name__ == '__main__':
-    # =========================================================================
-    # SCRIPT OVERVIEW
-    # Fits a DDMstable drift-diffusion model to experimental zebrafish bout
-    # data, using bootstrapped resampling and optionally multiple repeated
-    # fits per bootstrap. Can also regenerate a synthetic dataset from the
-    # fitted model, and saves fitted parameters, fitting-history logs, and
-    # synthetic data to HDF5.
-    # =========================================================================
-
     # PARAMETERS
     # data usage
     exclude_straight_bout = True  # drop fast, near-straight (non-decision) bouts
-    exclude_border = True  # drop bouts too close to the arena wall
+    exclude_border = True  # drop bouts too close to the arena wall (set False for synthetic data)
     compute_synthetic_dataset = False  # simulate a full synthetic bout dataset after fitting
     save_synthetic_dataframe = False  # write the synthetic dataset to disk
     save_model = True  # save aggregated fitted parameters at the end
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     # modeling configurations
     analysed_parameter = StimulusParameterLabel.COHERENCE.value  # StimulusParameterLabel.PERIOD.value  #
     analysed_parameter_list = [0, 25, 50, 100]  # None  # [1, 5, 6, 7.5, 10]  #  # fixed conditions, or infer from data if None
-    trials_per_simulation = 2000  # 20  #
+    trials_per_simulation = 2000  #
     sample_percentage_size = 1  # fraction of dataset drawn per bootstrap
     number_bootstraps = 1  #  # number of independent bootstrap resamples
     number_model_per_booststrap = 1  # number of independent fits per bootstrap

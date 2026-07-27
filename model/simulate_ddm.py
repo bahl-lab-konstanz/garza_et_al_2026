@@ -54,7 +54,7 @@ env = dotenv_values()
 # path
 path_save = Path(env['PATH_SAVE'])
 if set_parameters_from_dir or compute_score:
-    path_dir = Path(env['PATH_DIR'])
+    path_dir = Path(env['PATH_DIR']) / "benchmark" / "base_dataset"
 
 dt = 0.01
 response_time_label = ConfigurationExperiment.ResponseTimeColumn
@@ -376,4 +376,4 @@ if display:
         plot_section.set_ylim(p["min"], p["max"])
         plot_section.set_xticks([])
         plot_section.set_title(p["label"])
-    fig.savefig(path_save / "results" / "produce_data_parameter_distribution.png")
+    fig.savefig(path_save / "produce_data_parameter_distribution.png")

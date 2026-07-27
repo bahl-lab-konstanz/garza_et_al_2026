@@ -39,7 +39,7 @@ path_save = Path(env['PATH_SAVE'])   # Output directory for figures
 
 # paths for synthetic controls and real fish datasets
 path_data_control = Path(fr"{path_dir}/benchmark/base_dataset")
-path_data_fish = Path(fr"{path_dir}/base_dataset")
+path_data_fish = Path(fr"{path_dir}/base_dataset_5dpfWT")
 
 # ------------------------------------------------------------
 # Configuration analysis

@@ -4,6 +4,7 @@ Implementation of the analysis and plots shown in _Garza et al 2026_.
 ### Project organization
 Here is an overview to navigate the project
 - `figures`: contains all scripts generating raw versions of the figures in the manuscript
+- `gui`: contains the implementation of a graphical user interface to adjust model parameters and simulate it, design to run locally in browser
 - `model`: contains the implementation of the model, together with a lightweight version of a modeling framework under development in the Bahl Lab
 - `utils` and `service`: contain useful constants, functions, and utility classes, used to run analysis and compute core quantities appearing in the figures
 - `data`: empty directory, please put here the data once you have downloaded it (see paragraph _Data_)
@@ -27,4 +28,12 @@ directory unchanged to have the project tree organized consistently to the paths
 To install the core dependencies with conda:
 - Open terminal
 - Navigate to the root directory of this project
-- Run `conda env create --file=environment.yaml`
+- Run the following
+```
+conda config --set channel_priority flexible
+conda env create --file=environment.yaml
+```
+
+### GUI
+For more information about the graphical user interface to tweak and simulate Drift-Diffusion Models, please 
+refer to the documentation in `./gui/README_GUI.md`. For the up-to-date version of the application, please check [here](https://github.com/garza-roberto/ddm_gui). 

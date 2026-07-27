@@ -188,6 +188,6 @@ for i_tb in range(len(time_bin_list)):
 # --------------------------------------------------------------------------
 # Save final figure
 # --------------------------------------------------------------------------
-fig.save(path_save / "figure_s1_stationarity.pdf", open_file=True, tight=style.page_tight)
+fig.save(path_save / "figure_s1_stationarity.pdf", open_file=False, tight=style.page_tight)
 
         

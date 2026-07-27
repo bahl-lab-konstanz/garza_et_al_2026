@@ -455,4 +455,4 @@ if show_objective_function_vs_iterations:
 # -----------------------------------------------------------------------------
 # Save final figure
 # -----------------------------------------------------------------------------
-fig.save(path_save / "figure_s3_identifiability.pdf", open_file=False, tight=style.page_tight)
+fig.save(path_save / "figure_s3.pdf", open_file=False, tight=style.page_tight)

@@ -5,9 +5,8 @@ import pandas as pd
 from scipy.optimize import minimize, OptimizeResult, differential_evolution, dual_annealing
 from sklearn.model_selection import ParameterGrid
 
-from analysis.personal_dirs.Roberto.model.utils.params import ParameterList, Parameter
-from analysis.personal_dirs.Roberto.model.utils.signal import InputSignal
-import multiprocessing as mp
+from model.core.params import ParameterList, Parameter
+from model.core.signal import InputSignal
 from skopt import gp_minimize
 
 

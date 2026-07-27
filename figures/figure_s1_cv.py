@@ -149,4 +149,4 @@ plot_cv.draw_line(x=ConfigurationExperiment.coherence_list, y=coefficient_variat
 # ----------------------------------------------------------------------------
 # Save figure
 # ----------------------------------------------------------------------------
-fig.save(path_save / "figure_extended_data_1_cv.pdf", open_file=True, tight=style.page_tight)
+fig.save(path_save / "figure_extended_data_1_cv.pdf", open_file=False, tight=style.page_tight)

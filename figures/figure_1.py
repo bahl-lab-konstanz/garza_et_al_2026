@@ -585,4 +585,4 @@ if show_rt_distributions:
 # =============================================================================
 # Save final figure
 # =============================================================================
-fig.save(path_save / "figure_1.pdf", open_file=True, tight=style.page_tight)
+fig.save(path_save / "figure_1.pdf", open_file=False, tight=style.page_tight)
